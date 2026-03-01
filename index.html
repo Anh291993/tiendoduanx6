@@ -244,6 +244,63 @@ textarea.fc{resize:vertical;min-height:80px}
 .hint-warn{background:rgba(255,179,71,.07)}
 .hint-warn strong{color:var(--warn)}
 
+
+/* FILE UPLOAD ZONE */
+.upload-zone{border:1.5px dashed var(--border);border-radius:9px;padding:16px;text-align:center;
+  cursor:pointer;transition:all .2s;background:rgba(0,0,0,.2);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(0,194,255,.06);}
+.upload-zone input[type=file]{display:none}
+.upload-zone .uz-icon{font-size:28px;margin-bottom:6px}
+.upload-zone .uz-label{font-size:12px;color:var(--muted)}
+.upload-zone .uz-label strong{color:var(--accent)}
+.upload-zone .uz-hint{font-size:10px;color:rgba(255,255,255,.3);margin-top:3px}
+.file-preview{display:flex;align-items:center;gap:10px;background:rgba(0,194,255,.07);
+  border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-top:8px;}
+.fp-icon{font-size:24px;flex-shrink:0}
+.fp-info{flex:1;min-width:0}
+.fp-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-size{font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.fp-remove{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;
+  padding:0;transition:color .2s;flex-shrink:0;}
+.fp-remove:hover{color:var(--danger)}
+.upload-progress{height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:6px;overflow:hidden;}
+.upload-progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));
+  border-radius:2px;transition:width .3s;width:0%;}
+
+/* DOCUMENT LIST in detail modal */
+.doc-list{display:flex;flex-direction:column;gap:8px;padding:4px 0}
+.doc-item{display:flex;align-items:center;gap:12px;background:rgba(0,0,0,.2);
+  border:1px solid var(--border);border-radius:9px;padding:10px 14px;transition:all .2s;}
+.doc-item:hover{background:rgba(0,194,255,.07);border-color:rgba(0,194,255,.3);}
+.doc-item-icon{font-size:26px;flex-shrink:0}
+.doc-item-info{flex:1;min-width:0}
+.doc-item-name{font-size:13px;font-weight:600;margin-bottom:2px}
+.doc-item-meta{font-size:10px;color:var(--muted);font-family:var(--mono);display:flex;gap:10px;flex-wrap:wrap}
+.doc-item-actions{display:flex;gap:6px;flex-shrink:0}
+.doc-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 10px;
+  border-radius:6px;font-size:10px;cursor:pointer;font-family:var(--font);transition:all .2s;
+  display:flex;align-items:center;gap:4px;font-weight:600;}
+.doc-btn:hover{border-color:var(--accent);color:var(--accent)}
+.doc-btn.del:hover{border-color:var(--danger);color:var(--danger)}
+
+/* DOCUMENT VIEWER OVERLAY */
+#docViewer{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);
+  z-index:700;display:none;flex-direction:column;}
+#docViewer.open{display:flex}
+.dv-hdr{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--navy2);
+  border-bottom:1px solid var(--border);flex-shrink:0;}
+.dv-hdr h3{font-size:13px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dv-actions{display:flex;gap:8px;flex-shrink:0}
+.dv-close{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 14px;
+  border-radius:7px;font-size:12px;cursor:pointer;font-family:var(--font);transition:all .2s;}
+.dv-close:hover{border-color:var(--danger);color:var(--danger)}
+.dv-body{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0;}
+.dv-body iframe,.dv-body embed{width:100%;height:100%;border:none;background:#fff;}
+.dv-word-fallback{text-align:center;color:var(--muted);padding:40px;}
+.dv-word-fallback .dv-big-icon{font-size:60px;margin-bottom:16px}
+.dv-word-fallback h3{font-size:16px;color:var(--text);margin-bottom:8px}
+.dv-word-fallback p{font-size:13px;margin-bottom:20px}
+
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 @keyframes slideRight{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
@@ -417,6 +474,33 @@ textarea.fc{resize:vertical;min-height:80px}
         <textarea id="p1VM" class="fc" style="min-height:60px" placeholder="Mô tả khó khăn, vướng mắc…"></textarea></div>
       <div class="chkr"><input type="checkbox" id="p1Cham"/><label for="p1Cham">🚨 Đánh dấu <strong>chậm tiến độ</strong></label></div>
       <div><label class="fl">Người cập nhật</label><input id="p1Nguoi" class="fc" placeholder="Họ và tên…"/></div>
+      <div>
+        <label class="fl">📎 Tài liệu đính kèm (PDF hoặc Word, tối đa 20MB)</label>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');handleFileDrop(event)">
+          <input type="file" id="fileInput" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onchange="handleFileSelect(event)"/>
+          <div class="uz-icon">📄</div>
+          <div class="uz-label">Kéo thả file vào đây hoặc <strong>nhấn để chọn</strong></div>
+          <div class="uz-hint">Hỗ trợ: PDF, DOC, DOCX · Tối đa 20MB</div>
+        </div>
+        <div id="filePreview" style="display:none" class="file-preview">
+          <span class="fp-icon" id="fpIcon">📄</span>
+          <div class="fp-info">
+            <div class="fp-name" id="fpName"></div>
+            <div class="fp-size" id="fpSize"></div>
+            <div class="upload-progress" id="uploadProgressBar" style="display:none">
+              <div class="upload-progress-bar" id="uploadBar"></div>
+            </div>
+          </div>
+          <button class="fp-remove" onclick="clearFileInput()" title="Bỏ file">×</button>
+        </div>
+        <div><label class="fl" style="margin-top:10px">Mô tả tài liệu (tùy chọn)</label>
+          <input id="p1DocDesc" class="fc" placeholder="VD: Báo cáo đề xuất danh mục tháng 2/2026…"/>
+        </div>
+      </div>
     </div>
     <div class="mf"><button class="btn bg" onclick="closeM('mProg')">Hủy</button><button class="btn bp" onclick="submitProg()">💾 Lưu tiến độ</button></div>
   </div>
@@ -464,6 +548,7 @@ textarea.fc{resize:vertical;min-height:80px}
       <div class="mtabs">
         <button class="mtab active" onclick="switchMTab('dtInfo',this)">Thông tin</button>
         <button class="mtab" onclick="switchMTab('dtLog',this)">📜 Lịch sử cập nhật</button>
+        <button class="mtab" onclick="switchMTab('dtDocs',this)">📎 Tài liệu <span id="dtDocsCount" style="background:rgba(0,194,255,.2);color:var(--accent);padding:1px 6px;border-radius:10px;font-size:9px;margin-left:3px">0</span></button>
       </div>
       <div id="dtInfo">
         <div class="info-grid" id="detailMeta"></div>
@@ -474,6 +559,15 @@ textarea.fc{resize:vertical;min-height:80px}
         <div id="detailVM" style="margin-top:12px"></div>
       </div>
       <div id="dtLog" style="display:none"><div id="projLog" class="proj-log-list"><div class="empty-state"><div class="sp"></div></div></div></div>
+      <div id="dtDocs" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:11px;color:var(--muted)">Tài liệu đính kèm của dự án này</span>
+          <button class="btn bp" style="padding:5px 12px;font-size:11px" onclick="openProgressModal(curDetailId);closeM('mDetail')">
+            + Đính kèm tài liệu mới
+          </button>
+        </div>
+        <div id="docList" class="doc-list"><div class="empty-state"><div class="sp"></div></div></div>
+      </div>
     </div>
     <div class="mf">
       <button class="btn bg" onclick="closeM('mDetail')">Đóng</button>
@@ -504,6 +598,21 @@ textarea.fc{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<!-- ═══ DOCUMENT VIEWER ═══ -->
+<div id="docViewer">
+  <div class="dv-hdr">
+    <span style="font-size:20px" id="dvIcon">📄</span>
+    <h3 id="dvTitle">Tài liệu</h3>
+    <div class="dv-actions">
+      <a id="dvDownload" href="#" target="_blank" class="btn bs" style="font-size:11px;padding:5px 14px;text-decoration:none">⬇ Tải về</a>
+      <button class="dv-close" onclick="closeDocViewer()">✕ Đóng</button>
+    </div>
+  </div>
+  <div class="dv-body" id="dvBody">
+    <div style="color:var(--muted)">Đang tải…</div>
+  </div>
+</div>
+
 <div id="toastWrap"></div>
 
 <!-- ════════════════════ SCRIPT ════════════════════ -->
@@ -517,8 +626,8 @@ const SUPABASE_URL = 'https://vaxynzyehvcxhgwxrgzs.supabase.co';   // ← Supaba
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZheHluenllaHZjeGhnd3hyZ3pzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI0NjY2ODgsImV4cCI6MjA2ODA0MjY4OH0.QwKNzGBQOHPgxAZ-UedxT9l0RIxAf1mRuB5okJvr3es';                // ← Supabase anon/public key
 
 // N8N Webhook URLs (sau khi Activate workflow trong N8N)
-const WH1 = 'https://n8nhome.chatpro.io.vn/webhook-test/cap-nhat-tien-do';  // #1 – Cập nhật tiến độ
-const WH2 = 'https://n8nhome.chatpro.io.vn/webhook-test/flag-du-an';         // #2 – Flag vướng mắc / đổi trạng thái
+const WH1 = 'https://n8nhome.chatpro.io.vn/webhook/cap-nhat-tien-do';  // #1 – Cập nhật tiến độ
+const WH2 = 'https://n8nhome.chatpro.io.vn/webhook/flag-du-an';         // #2 – Flag vướng mắc / đổi trạng thái
 const WH3 = 'https://your-n8n/webhook/lay-du-lieu';         // #3 – Lấy dữ liệu + KPI
 const WH4 = 'https://your-n8n/webhook/kiem-tra-cham';      // #4 – Kiểm tra & gửi thông báo (mới)
 
@@ -919,8 +1028,10 @@ async function openDetail(id){
     `<label class="fl" style="color:var(--warn)">⚠️ Vướng mắc</label>
      <div style="font-size:12px;color:var(--warn);background:rgba(255,179,71,.08);padding:10px 12px;border-radius:7px;border:1px solid rgba(255,179,71,.2);line-height:1.6">${p.vuong_mac}</div>`:'';
   openM('mDetail');
-  switchMTab('dtInfo',document.querySelector('.mtab'));
+  const firstTab=document.querySelector('#mDetail .mtab');
+  switchMTab('dtInfo',firstTab);
   await loadProjLog(id);
+  await loadProjDocs(id);
 }
 
 async function loadProjLog(id){
@@ -961,6 +1072,33 @@ async function submitProg(){
       await db.from('projects').update({tien_do:td,vuong_mac:vm||null,is_cham_tien_do:cham,updated_at:new Date().toISOString()}).eq('id',id);
     }
     toast('✅ Cập nhật tiến độ thành công!','ok');
+
+    // Upload file nếu có
+    if(selectedFile){
+      try{
+        toast('⏫ Đang upload tài liệu…','ok');
+        const { path, publicUrl, ext } = await uploadFileToStorage(selectedFile, id);
+        const desc = document.getElementById('p1DocDesc').value.trim();
+        const nguoiUpload = nguoi;
+        await db.from('document').insert({
+          project_id:   id,
+          ten_tai_lieu: desc || selectedFile.name.replace(/\.[^.]+$/,''),
+          ten_file:     selectedFile.name,
+          loai_file:    ext,
+          storage_path: path,
+          public_url:   publicUrl,
+          nguoi_upload: nguoiUpload,
+          kich_thuoc:   selectedFile.size,
+          mo_ta:        desc||null,
+          ngay_upload:  new Date().toISOString()
+        });
+        toast('📎 Đã đính kèm tài liệu thành công!','ok');
+        clearFileInput();
+      } catch(uploadErr){
+        toast('⚠️ Tiến độ đã lưu nhưng upload file lỗi: '+uploadErr.message,'warn');
+      }
+    }
+
     closeM('mProg');
     ['p1TD','p1VM'].forEach(i=>document.getElementById(i).value='');
     document.getElementById('p1Cham').checked=false;
@@ -1029,7 +1167,7 @@ function switchTab(name,btn){
   if(name==='log') loadLog();
 }
 function switchMTab(id,btn){
-  ['dtInfo','dtLog'].forEach(n=>document.getElementById(n).style.display='none');
+  ['dtInfo','dtLog','dtDocs'].forEach(n=>document.getElementById(n).style.display='none');
   document.querySelectorAll('.mtab').forEach(el=>el.classList.remove('active'));
   document.getElementById(id).style.display='block';
   if(btn) btn.classList.add('active');
@@ -1048,6 +1186,166 @@ function toast(msg,type='ok'){
   document.getElementById('toastWrap').appendChild(el);
   setTimeout(()=>el.remove(),3500);
 }
+
+// ─── FILE UPLOAD ─────────────────────────────────────────────────
+const MAX_FILE_MB = 20;
+let selectedFile = null;
+
+function handleFileSelect(e){ setFile(e.target.files[0]); }
+function handleFileDrop(e){ setFile(e.dataTransfer.files[0]); }
+
+function setFile(file){
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(!['pdf','doc','docx'].includes(ext)){ toast('Chỉ hỗ trợ PDF, DOC, DOCX','warn'); return; }
+  if(file.size > MAX_FILE_MB * 1024 * 1024){ toast('File quá lớn (tối đa '+MAX_FILE_MB+'MB)','warn'); return; }
+  selectedFile = file;
+  document.getElementById('fpIcon').textContent  = ext==='pdf'?'📕':'📘';
+  document.getElementById('fpName').textContent  = file.name;
+  document.getElementById('fpSize').textContent  = formatBytes(file.size);
+  document.getElementById('filePreview').style.display = 'flex';
+  document.getElementById('uploadZone').style.display  = 'none';
+}
+
+function clearFileInput(){
+  selectedFile = null;
+  document.getElementById('fileInput').value = '';
+  document.getElementById('filePreview').style.display = 'none';
+  document.getElementById('uploadZone').style.display  = 'block';
+  document.getElementById('p1DocDesc').value = '';
+}
+
+function formatBytes(b){
+  if(b<1024) return b+'B';
+  if(b<1024*1024) return (b/1024).toFixed(1)+'KB';
+  return (b/1024/1024).toFixed(2)+'MB';
+}
+
+async function uploadFileToStorage(file, projectId){
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const ts   = Date.now();
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const storagePath = `${projectId}/${ts}_${safe}`;
+
+  // Show progress bar
+  const bar  = document.getElementById('uploadBar');
+  const barW = document.getElementById('uploadProgressBar');
+  barW.style.display = 'block';
+  bar.style.width = '15%';
+
+  // Lấy session token hiện tại
+  const { data: sessionData } = await db.auth.getSession();
+  const token = sessionData?.session?.access_token || SUPABASE_KEY;
+
+  const mimeType = ext==='pdf'  ? 'application/pdf'
+                 : ext==='docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                 : 'application/msword';
+
+  // Upload trực tiếp qua fetch API (tránh lỗi CORS của SDK)
+  const uploadUrl = `${SUPABASE_URL}/storage/v1/object/document/${storagePath}`;
+
+  bar.style.width = '30%';
+
+  const uploadResp = await fetch(uploadUrl, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'apikey': SUPABASE_KEY,
+      'Content-Type': mimeType,
+      'x-upsert': 'false',
+      'Cache-Control': '3600',
+    },
+    body: file
+  });
+
+  bar.style.width = '80%';
+
+  if(!uploadResp.ok){
+    let errMsg = `HTTP ${uploadResp.status}`;
+    try{ const j = await uploadResp.json(); errMsg = j.message || j.error || errMsg; } catch(e){}
+    throw new Error('Upload Storage lỗi: ' + errMsg);
+  }
+
+  // Public URL
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/document/${storagePath}`;
+  bar.style.width = '100%';
+  return { path: storagePath, publicUrl, ext };
+}
+
+// ─── LOAD PROJECT DOCUMENTS ───────────────────────────────────────
+async function loadProjDocs(id){
+  const listEl  = document.getElementById('docList');
+  const countEl = document.getElementById('dtDocsCount');
+  listEl.innerHTML = '<div class="empty-state"><div class="sp"></div></div>';
+  const { data, error } = await db.from('document')
+    .select('*').eq('project_id', id)
+    .order('ngay_upload', { ascending: false });
+  if(error){ listEl.innerHTML='<div class="empty-state">Lỗi tải tài liệu</div>'; return; }
+  if(countEl) countEl.textContent = data?.length||0;
+  if(!data||!data.length){ listEl.innerHTML='<div class="empty-state" style="padding:32px">📭 Chưa có tài liệu nào được đính kèm</div>'; return; }
+  listEl.innerHTML = data.map(doc => {
+    const ext    = doc.loai_file||'pdf';
+    const icon   = ext==='pdf'?'📕':'📘';
+    const date   = doc.ngay_upload ? new Date(doc.ngay_upload).toLocaleString('vi-VN') : '–';
+    const size   = doc.kich_thuoc  ? formatBytes(doc.kich_thuoc) : '';
+    return `<div class="doc-item">
+      <span class="doc-item-icon">${icon}</span>
+      <div class="doc-item-info">
+        <div class="doc-item-name">${doc.ten_tai_lieu||doc.ten_file}</div>
+        <div class="doc-item-meta">
+          <span>📎 ${doc.ten_file}</span>
+          ${size?`<span>💾 ${size}</span>`:''}
+          <span>👤 ${doc.nguoi_upload||'–'}</span>
+          <span>🕐 ${date}</span>
+          ${doc.mo_ta?`<span style="color:var(--text)">📝 ${doc.mo_ta}</span>`:''}
+        </div>
+      </div>
+      <div class="doc-item-actions">
+        <button class="doc-btn" onclick="viewDoc('${doc.public_url}','${doc.ten_tai_lieu||doc.ten_file}','${doc.loai_file}')">👁 Xem</button>
+        <a class="doc-btn" href="${doc.public_url}" target="_blank" download="${doc.ten_file}">⬇ Tải</a>
+        <button class="doc-btn del" onclick="deleteDoc('${doc.id}','${doc.storage_path}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── DOCUMENT VIEWER ─────────────────────────────────────────────
+function viewDoc(url, name, ext){
+  document.getElementById('dvIcon').textContent  = ext==='pdf'?'📕':'📘';
+  document.getElementById('dvTitle').textContent = name;
+  document.getElementById('dvDownload').href     = url;
+  const body = document.getElementById('dvBody');
+  if(ext==='pdf'){
+    body.innerHTML = `<iframe src="${url}#toolbar=1&navpanes=1" title="${name}"></iframe>`;
+  } else {
+    // Word: dùng Microsoft Office Online viewer
+    const encoded = encodeURIComponent(url);
+    body.innerHTML = `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encoded}" title="${name}"></iframe>`;
+  }
+  document.getElementById('docViewer').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function closeDocViewer(){
+  document.getElementById('docViewer').classList.remove('open');
+  document.getElementById('dvBody').innerHTML='';
+  document.body.style.overflow='';
+}
+
+// ─── DELETE DOCUMENT ─────────────────────────────────────────────
+async function deleteDoc(docId, storagePath){
+  if(!confirm('Xác nhận xoá tài liệu này?')) return;
+  try{
+    await db.storage.from('document').remove([storagePath]);
+    await db.from('document').delete().eq('id', docId);
+    toast('🗑 Đã xoá tài liệu','ok');
+    await loadProjDocs(curDetailId);
+  } catch(e){ toast('❌ Lỗi xoá: '+e.message,'err'); }
+}
+
+// ─── OVERRIDE submitProg to also handle file upload ───────────────
+const _origSubmitProg = submitProg;
+// Override defined below after original
 
 // ─── KPI POPUP ───────────────────────────────────────────────────
 const KPI_CFG = {
@@ -1117,7 +1415,7 @@ function closeKpiPopup(){
   document.body.style.overflow='';
 }
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeKpiPopup(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeKpiPopup(); closeDocViewer(); } });
 
 // ─── INIT ────────────────────────────────────────────────────────
 checkSession();
