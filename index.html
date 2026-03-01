@@ -150,7 +150,7 @@ tbody tr:hover{background:rgba(0,194,255,.04)}
 tbody tr.rl{background:rgba(255,79,79,.05)}
 tbody td{padding:11px 14px;vertical-align:middle}
 .td-name{font-weight:500;line-height:1.5;max-width:300px}
-.td-prog{font-size:11px;color:var(--muted);line-height:1.5;max-width:240px}
+.td-prog{font-size:12px;color:var(--text);line-height:1.5;max-width:240px}
 .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:9px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
 .bp2p8{background:rgba(0,194,255,.15);color:var(--accent);border:1px solid rgba(0,194,255,.3)}
 .bp4{background:rgba(150,100,255,.15);color:#b08aff;border:1px solid rgba(150,100,255,.3)}
@@ -408,6 +408,7 @@ textarea.fc{resize:vertical;min-height:80px}
           <button class="btn bp" onclick="applyFilter()">🔍 Lọc</button>
           <button class="btn bg" onclick="resetFilter()">↺ Đặt lại</button>
           <button class="btn bs" onclick="exportExcel()" style="margin-left:auto">📥 Xuất Excel</button>
+          <button class="btn bn" onclick="openNewProject()" style="background:linear-gradient(135deg,#00e5b0,#00a88a);color:#0b1929;font-weight:800;border:none">＋ Tạo dự án mới</button>
           <button class="btn bo" onclick="openProgressModal()">✏️ Cập nhật tiến độ</button>
           <button class="btn bw" onclick="openFlagModal()">🚩 Flag dự án</button>
         </div>
@@ -457,6 +458,74 @@ textarea.fc{resize:vertical;min-height:80px}
           <div class="log-stat"><h3>Dự án hoạt động nhiều nhất</h3><div id="logTop"><div style="font-size:12px;color:var(--muted)">Đang tải…</div></div></div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Tạo dự án mới ═══ -->
+<div class="overlay" id="mNewProj">
+  <div class="modal" style="max-width:560px">
+    <div class="mh"><span style="font-size:18px">🆕</span><h3>Tạo dự án mới</h3><button class="mclose" onclick="closeM('mNewProj')">×</button></div>
+    <div class="mb">
+      <div class="hint" style="background:rgba(0,229,176,.07);border-color:rgba(0,229,176,.2)">
+        📌 Dự án mới sẽ được lưu vào Supabase và tự động cập nhật trên tất cả các trang
+      </div>
+      <div>
+        <label class="fl">Tên công trình <span style="color:var(--danger)">*</span></label>
+        <textarea id="np_ten" class="fc" style="min-height:60px" placeholder="Nhập tên đầy đủ của công trình…"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="fl">Nguồn vốn <span style="color:var(--danger)">*</span></label>
+          <select id="np_von" class="fc">
+            <option value="">– Chọn –</option>
+            <option value="ĐTXD">ĐTXD</option>
+            <option value="ĐTMS">ĐTMS</option>
+          </select>
+        </div>
+        <div>
+          <label class="fl">Trạng thái <span style="color:var(--danger)">*</span></label>
+          <select id="np_tt" class="fc">
+            <option value="P2_P8">P02/P08 – Đang triển khai</option>
+            <option value="P4">P04 – Đang triển khai</option>
+            <option value="CHO_KE_HOACH">Chờ giao kế hoạch</option>
+            <option value="TRINH_DUYET_DM">Đang trình duyệt DM</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="fl">Tiến độ thực hiện</label>
+        <textarea id="np_tiendo" class="fc" style="min-height:60px" placeholder="Mô tả tình trạng triển khai hiện tại…"></textarea>
+      </div>
+      <div>
+        <label class="fl">Vướng mắc</label>
+        <textarea id="np_vm" class="fc" style="min-height:55px" placeholder="Mô tả khó khăn nếu có, để trống nếu không…"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="fl">Lãnh đạo phụ trách</label>
+          <input id="np_ld" class="fc" placeholder="Họ tên lãnh đạo…"/>
+        </div>
+        <div>
+          <label class="fl">Chuyên viên phụ trách</label>
+          <input id="np_cv" class="fc" placeholder="Họ tên chuyên viên…"/>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="fl">Ngày bắt đầu</label>
+          <input id="np_nd" class="fc" type="date"/>
+        </div>
+        <div>
+          <label class="fl">Ngày kết thúc dự kiến</label>
+          <input id="np_nkt" class="fc" type="date"/>
+        </div>
+      </div>
+      <div class="chkr"><input type="checkbox" id="np_cham"/><label for="np_cham">🚨 Đánh dấu chậm tiến độ</label></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('mNewProj')">Hủy</button>
+      <button class="btn bn" onclick="submitNewProject()" style="background:linear-gradient(135deg,#00e5b0,#00a88a);color:#0b1929;font-weight:800;border:none">🆕 Tạo dự án</button>
     </div>
   </div>
 </div>
@@ -803,14 +872,14 @@ function renderTable(data){
       <td class="td-name">${p.ten_cong_trinh}</td>
       <td>${p.nguon_von==='ĐTXD'?'<span class="badge bdtxd">ĐTXD</span>':'<span class="badge bdtms">ĐTMS</span>'}</td>
       <td>${st?`<span class="badge ${st.cls}">${st.label}</span>`:p.trang_thai??'–'}</td>
-      <td class="td-prog">${p.tien_do ? `<div style="line-height:1.5">${p.tien_do}</div>${p._latestLog?`<div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)">👤 ${p._latestLog.nguoi_cap_nhat||'–'} · ${new Date(p._latestLog.ngay_cap_nhat).toLocaleDateString('vi-VN')}</div>`:''}` : '<span style="color:rgba(255,255,255,.2);font-style:italic">Chưa cập nhật</span>'}</td>
-      <td style="text-align:center">
-        ${p.vuong_mac?`<span title="${p.vuong_mac}" style="cursor:help;font-size:15px">⚠️</span>`:'<span style="color:rgba(255,255,255,.15)">—</span>'}
-        ${p.is_cham_tien_do?'<span style="font-size:15px">🚨</span>':''}
+      <td class="td-prog">${p.tien_do ? `<div style="line-height:1.5;color:var(--text)">${p.tien_do}</div>${p._latestLog?`<div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)">👤 ${p._latestLog.nguoi_cap_nhat||'–'} · ${new Date(p._latestLog.ngay_cap_nhat).toLocaleDateString('vi-VN')}</div>`:''}` : '<span style="color:rgba(255,255,255,.25);font-style:italic;font-size:11px">Chưa cập nhật</span>'}</td>
+      <td style="max-width:180px">
+        ${p.vuong_mac?`<div style="color:var(--warn);font-size:11px;line-height:1.5">${p.vuong_mac}</div>`:'<span style="color:rgba(255,255,255,.15)">—</span>'}
+        ${p.is_cham_tien_do?'<div style="font-size:11px;color:var(--danger);margin-top:2px">🚨 Chậm tiến độ</div>':''}
       </td>
-      <td style="font-size:11px;color:var(--muted)">
-        ${p.lanh_dao?`<div>${p.lanh_dao}</div>`:''}
-        ${p.chuyen_vien?`<div style="opacity:.7">${p.chuyen_vien}</div>`:''}
+      <td style="font-size:11px;color:var(--text)">
+        ${p.lanh_dao?`<div style="font-weight:500">${p.lanh_dao}</div>`:''}
+        ${p.chuyen_vien?`<div style="color:var(--muted);margin-top:2px">${p.chuyen_vien}</div>`:''}
       </td>
       <td><div style="display:flex;gap:4px;flex-wrap:wrap">
         <button class="ra" onclick="openDetail('${p.id}')">📁</button>
@@ -1047,6 +1116,79 @@ async function loadProjLog(id){
         <div class="pli-meta"><span>👤 ${l.nguoi_cap_nhat||'Hệ thống'}</span><span>🕐 ${new Date(l.ngay_cap_nhat).toLocaleString('vi-VN')}</span></div>
       </div>
     </div>`).join('');
+}
+
+// ─── MODAL: Tạo dự án mới ────────────────────────────────────────
+function openNewProject(){
+  // Reset form
+  ['np_ten','np_tiendo','np_vm','np_ld','np_cv'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('np_von').value='';
+  document.getElementById('np_tt').value='P2_P8';
+  document.getElementById('np_cham').checked=false;
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('np_nd').value=today;
+  document.getElementById('np_nkt').value='';
+  openM('mNewProj');
+}
+
+async function submitNewProject(){
+  const ten   = document.getElementById('np_ten').value.trim();
+  const von   = document.getElementById('np_von').value;
+  const tt    = document.getElementById('np_tt').value;
+  const td    = document.getElementById('np_tiendo').value.trim();
+  const vm    = document.getElementById('np_vm').value.trim();
+  const ld    = document.getElementById('np_ld').value.trim();
+  const cv    = document.getElementById('np_cv').value.trim();
+  const nd    = document.getElementById('np_nd').value || null;
+  const nkt   = document.getElementById('np_nkt').value || null;
+  const cham  = document.getElementById('np_cham').checked;
+
+  if(!ten){ toast('Vui lòng nhập tên công trình','warn'); return; }
+  if(!von){ toast('Vui lòng chọn nguồn vốn','warn'); return; }
+
+  // Tính stt mới = max(stt) + 1 trong cùng trạng thái
+  const sameStatus = allProjects.filter(p=>p.trang_thai===tt);
+  const nextStt = sameStatus.length ? Math.max(...sameStatus.map(p=>p.stt||0))+1 : 1;
+
+  const newProj = {
+    stt:            nextStt,
+    ten_cong_trinh: ten,
+    nguon_von:      von,
+    trang_thai:     tt,
+    tien_do:        td || null,
+    vuong_mac:      vm || null,
+    lanh_dao:       ld || null,
+    chuyen_vien:    cv || null,
+    ngay_bat_dau:   nd,
+    ngay_ket_thuc:  nkt,
+    is_cham_tien_do: cham,
+    created_at:     new Date().toISOString(),
+    updated_at:     new Date().toISOString(),
+  };
+
+  try{
+    const {data, error} = await db.from('projects').insert(newProj).select().single();
+    if(error) throw error;
+
+    // Nếu có tiến độ ban đầu → ghi vào progress_logs
+    if(td && data?.id){
+      const nguoi = currentUser?.email?.split('@')[0] || 'Admin';
+      await db.from('progress_logs').insert({
+        project_id: data.id,
+        noi_dung_tien_do: td,
+        nguoi_cap_nhat: nguoi,
+        ngay_cap_nhat: new Date().toISOString()
+      });
+    }
+
+    toast('✅ Đã tạo dự án mới thành công!','ok');
+    closeM('mNewProj');
+    await loadAll(); // Reload tất cả: bảng, dashboard, gantt, nhật ký
+  } catch(e){
+    toast('❌ Lỗi tạo dự án: '+e.message,'err');
+  }
 }
 
 // ─── MODAL: Cập nhật tiến độ (WH1) ───────────────────────────────
