@@ -952,7 +952,7 @@ const WH2 = 'https://n8nhome.chatpro.io.vn/webhook/flag-du-an';         // #2 �
 const WH3 = 'https://your-n8n/webhook/lay-du-lieu';         // #3 – Lấy dữ liệu + KPI
 const WH4 = 'https://your-n8n/webhook/kiem-tra-cham';      // #4 – Kiểm tra & gửi thông báo (mới)
 const WH5 = 'https://n8nhome.chatpro.io.vn/webhook/canh-bao-phan-ky';      // #5 – Cảnh báo cột mốc phân kỳ gần đến hạn
-const WH6 = 'https://n8nhome.chatpro.io.vn/webhook/luu-phan-ky-gantt';    // #6 – Lưu/cập nhật cột mốc Gantt → Supabase
+const WH6 = 'https://n8nhome.chatpro.io.vn/webhook-test/luu-phan-ky-gantt';    // #6 – Lưu/cập nhật cột mốc Gantt → Supabase
 
 // ══════════════════════════════════════════════════════════════════════
 
@@ -1002,7 +1002,13 @@ function showApp(){
 }
 
 // ─── LOAD DATA ────────────────────────────────────────────────────
-async function loadAll(){ await loadData(); await loadLog(); await loadGanttFromSupabase(); }
+async function loadAll(){
+  // ⚠️ CRITICAL ORDER: loadGanttFromSupabase MUST run before loadData
+  // because loadData → renderGantt() reads milestoneCompletions & phaseCompletions
+  await loadGanttFromSupabase();
+  await loadData();
+  await loadLog();
+}
 
 async function loadData(){
   try{
@@ -1038,11 +1044,11 @@ async function loadData(){
     }
     allProjects=projects; filteredProjects=[...projects];
     renderKPI(kpi||computeKPI(projects));
-    renderCharts(projects);
+    renderGantt();            // ← FIRST: populates lastAlerts with correct milestoneCompletions
+    renderCharts(projects);   // ← THEN: bar chart reads lastAlerts for correct overdue count
     renderTable(projects);
     populateSel(projects);
     renderDashLog();
-    renderGantt();
   } catch(e){ toast('❌ Lỗi tải dữ liệu: '+e.message,'err'); }
 }
 
@@ -1071,6 +1077,15 @@ function computeKPI(d){ return {
 function renderKPI(k){
   const keys=['dang_trien_khai_p2_p8','dang_trien_khai_p4','cho_ke_hoach','trinh_duyet_dm','co_vuong_mac','cham_tien_do'];
   keys.forEach((key,i)=>{ const el=document.getElementById('k'+(i+1)); if(el) el.textContent=k[key]??'–'; });
+  // k6: override với số dự án quá hạn từ Gantt (unique project names)
+  updateK6FromGantt();
+}
+
+function updateK6FromGantt(){
+  const el = document.getElementById('k6');
+  if(!el) return;
+  const overdueProjects = new Set(lastAlerts.filter(a=>a.status.cls==='over').map(a=>a.projectName));
+  el.textContent = overdueProjects.size; // always update, including 0
 }
 
 // ─── CHARTS ───────────────────────────────────────────────────────
@@ -1085,17 +1100,17 @@ function renderCharts(data){
         backgroundColor:['#00c2ff','#9b6dff','#ffb347','#ff8050'],borderWidth:0}]},
     options:{cutout:'62%',plugins:{legend:{position:'right',labels:{color:tc,font:{family:ff,size:11},boxWidth:11,padding:12}}}}
   });
-  // Biểu đồ tình trạng: Đúng tiến độ / Chậm tiến độ / Vướng mắc
-  const dungTienDo = data.filter(p=>!p.is_cham_tien_do&&(!p.vuong_mac||!p.vuong_mac.trim())).length;
-  const chamTienDo = k.cham_tien_do;
-  const vuongMac   = data.filter(p=>p.vuong_mac&&p.vuong_mac.trim()&&!p.is_cham_tien_do).length;
+  // Bar chart: dùng số dự án quá hạn từ Gantt (lastAlerts) thay vì field is_cham_tien_do
+  const ganttOverdue = new Set(lastAlerts.filter(a=>a.status.cls==='over').map(a=>a.projectName)).size;
+  const dungTienDo = Math.max(0, data.filter(p=>p.trang_thai==='P2_P8'||p.trang_thai==='P4').length - ganttOverdue);
+  const vuongMac   = data.filter(p=>p.vuong_mac&&p.vuong_mac.trim()).length;
   cFund=new Chart(document.getElementById('cTinhTrang'),{
     type:'bar',
     data:{
       labels:['Đúng tiến độ','Chậm tiến độ','Vướng mắc'],
       datasets:[{
         label:'Số dự án',
-        data:[dungTienDo, chamTienDo, vuongMac],
+        data:[dungTienDo, ganttOverdue, vuongMac],
         backgroundColor:['#00e5b0','#ff4f4f','#ffb347'],
         borderRadius:8, borderWidth:0,
         barThickness:48,
@@ -1112,6 +1127,18 @@ function renderCharts(data){
       }
     }
   });
+}
+
+// Cập nhật bar chart sau khi Gantt load xong với dữ liệu is_completed từ Supabase
+function updateChartsFromGantt(){
+  if(!cFund) return;
+  const ganttOverdue = new Set(lastAlerts.filter(a=>a.status.cls==='over').map(a=>a.projectName)).size;
+  const data = allProjects;
+  const dungTienDo = Math.max(0, data.filter(p=>p.trang_thai==='P2_P8'||p.trang_thai==='P4').length - ganttOverdue);
+  const vuongMac   = data.filter(p=>p.vuong_mac&&p.vuong_mac.trim()).length;
+  cFund.data.datasets[0].data = [dungTienDo, ganttOverdue, vuongMac];
+  cFund.update();
+  updateK6FromGantt();
 }
 
 // ─── TABLE ────────────────────────────────────────────────────────
@@ -1192,16 +1219,54 @@ async function loadGanttFromSupabase(){
   try{
     const { data, error } = await db.from('gantt_milestones').select('*').order('sort_order');
     if(error){ console.warn('gantt_milestones not yet created:', error.message); return; }
+
+    // Reset all completion caches before repopulating from Supabase
     ganttLiveData = {};
+    milestoneCompletions = {};
+    phaseCompletions = {};
+
     if(data) data.forEach(row => {
       const key = row.project_name + '::' + row.phase + '::' + row.sub_phase;
       ganttLiveData[key] = row;
-      // Sync completion state
-      const phKey = getPhaseKey_byName(row.project_name, row.phase);
-      if(row.is_completed) phaseCompletions[phKey] = true;
+      // Sync individual milestone completion (name-based key used everywhere)
+      if(row.is_completed) milestoneCompletions[key] = true;
     });
+
+    // ── Sync phaseCompletions for GANTT_DATA projects using NUMERIC key ──
+    // Rendering uses getPhaseKey(gdIdx, grp) = "2::KHLCNT" (numeric index format)
+    // loadGanttFromSupabase previously only set name-based keys → mismatch on reload
+    GANTT_DATA.forEach((gd, gi) => {
+      const phaseGroups = {};
+      gd.m.forEach(m => {
+        if(!phaseGroups[m.g]) phaseGroups[m.g] = [];
+        phaseGroups[m.g].push(m);
+      });
+      Object.entries(phaseGroups).forEach(([phase, mss]) => {
+        const allDone = mss.length > 0 && mss.every(m => {
+          const msKey = getMsKey(gd.n, phase, m.s);
+          return ganttLiveData[msKey]?.is_completed === true;
+        });
+        if(allDone){
+          phaseCompletions[getPhaseKey(gi, phase)] = true;          // numeric → used in rendering
+          phaseCompletions[getPhaseKey_byName(gd.n, phase)] = true; // name-based → for live projects
+        }
+      });
+    });
+
+    // Sync phase completions for live-data (Supabase-only) projects
+    const livePhaseSets = {};
+    Object.values(ganttLiveData).forEach(row => {
+      const pk = row.project_name + '||' + row.phase;
+      if(!livePhaseSets[pk]) livePhaseSets[pk] = { allDone: true, project_name: row.project_name, phase: row.phase };
+      if(!row.is_completed) livePhaseSets[pk].allDone = false;
+    });
+    Object.values(livePhaseSets).forEach(({ allDone, project_name, phase }) => {
+      if(allDone) phaseCompletions[getPhaseKey_byName(project_name, phase)] = true;
+    });
+
     console.log('Loaded', data ? data.length : 0, 'milestones from Supabase');
-    renderGantt();
+    // NOTE: renderGantt() is called by loadData() — do NOT call it here to avoid double-render
+    // updateChartsFromGantt() will be called after loadData() completes
   } catch(e){ console.warn('loadGanttFromSupabase error:', e.message); }
 }
 
@@ -1403,7 +1468,32 @@ async function saveAllMilestones(){
 }
 
 // ── SEND TO N8N ───────────────────────────────────────────────────
+// Lưu trực tiếp trạng thái hoàn thành cột mốc vào Supabase (không qua N8N)
+async function saveMilestoneDoneToSupabase(payload){
+  const upd = {
+    is_completed: payload.is_completed,
+    completed_by: payload.is_completed ? (payload.completed_by || 'user') : null,
+    completed_at: payload.is_completed ? (payload.completed_at || new Date().toISOString()) : null
+  };
+  try{
+    if(payload.id){
+      const {error} = await db.from('gantt_milestones').update(upd).eq('id', payload.id);
+      if(error) throw error;
+    } else {
+      const msKey = getMsKey(payload.project_name, payload.phase, payload.sub_phase);
+      const planned = ganttLiveData[msKey]?.planned_date || null;
+      const {error} = await db.from('gantt_milestones').upsert({
+        project_name: payload.project_name, phase: payload.phase,
+        sub_phase: payload.sub_phase, planned_date: planned, ...upd
+      }, {onConflict:'project_name,phase,sub_phase'});
+      if(error) throw error;
+    }
+  } catch(e){ console.error('saveMilestoneDone error:', e.message); toast('Lỗi lưu: '+e.message,'err'); }
+}
+
 async function sendGanttToN8N(payload){
+  // toggle_milestone always saved directly to Supabase (N8N workflow doesn't handle it)
+  if(payload.action === 'toggle_milestone'){ saveMilestoneDoneToSupabase(payload); return; }
   const wh = WH6 && !WH6.includes('your-n8n') ? WH6 : null;
   if(!wh){
     // Fallback: save directly to Supabase if no webhook configured
@@ -1427,6 +1517,25 @@ async function sendGanttToN8N(payload){
           .eq('project_name', payload.project_name)
           .eq('phase', payload.phase)
           .eq('sub_phase', payload.sub_phase);
+      }
+    } else if(payload.action === 'toggle_milestone'){
+      // Upsert the milestone completion state
+      const updateData = {
+        project_name: payload.project_name,
+        phase: payload.phase,
+        sub_phase: payload.sub_phase,
+        is_completed: payload.is_completed,
+        completed_by: payload.is_completed ? payload.completed_by : null,
+        completed_at: payload.is_completed ? payload.completed_at : null
+      };
+      if(payload.id){
+        await db.from('gantt_milestones').update({
+          is_completed: payload.is_completed,
+          completed_by: updateData.completed_by,
+          completed_at: updateData.completed_at
+        }).eq('id', payload.id);
+      } else {
+        await db.from('gantt_milestones').upsert(updateData, {onConflict:'project_name,phase,sub_phase'});
       }
     }
     return;
@@ -1455,7 +1564,41 @@ async function deleteMilestone(projName, phase, subPhase, id, event){
   renderGantt();
 }
 
-// ── UPDATE togglePhaseDone to also save to Supabase ───────────────
+// ── TOGGLE INDIVIDUAL MILESTONE COMPLETION ───────────────────────
+async function toggleMilestoneDone(projName, phase, subPhase, id, event){
+  if(event) event.stopPropagation();
+  const key = getMsKey(projName, phase, subPhase);
+  const newDone = !milestoneCompletions[key];
+  milestoneCompletions[key] = newDone;
+
+  // Update local ganttLiveData cache
+  if(ganttLiveData[key]){
+    ganttLiveData[key].is_completed = newDone;
+  } else {
+    // Create a lightweight entry if not in Supabase yet
+    ganttLiveData[key] = { project_name: projName, phase, sub_phase: subPhase, is_completed: newDone, planned_date: null };
+  }
+
+  // Persist to Supabase via N8N or direct
+  const user = currentUser?.email?.split('@')[0] || 'system';
+  const payload = {
+    action: 'toggle_milestone',
+    project_name: projName,
+    phase,
+    sub_phase: subPhase,
+    id: id || null,
+    is_completed: newDone,
+    completed_by: user,
+    completed_at: newDone ? new Date().toISOString() : null
+  };
+  await sendGanttToN8N(payload);
+
+  toast(newDone ? `✅ Đã hoàn thành "${subPhase}"` : `↩ Bỏ hoàn thành "${subPhase}"`, 'ok');
+  renderGmDetail();
+  renderGantt(); // re-compute alerts and pills
+}
+
+
 async function togglePhaseDoneWithSave(projName, gdIdx, grp){
   const phKey = gdIdx >= 0 ? getPhaseKey(gdIdx, grp) : getPhaseKey_byName(projName, grp);
   phaseCompletions[phKey] = !phaseCompletions[phKey];
@@ -1491,10 +1634,14 @@ let lastAlerts = [];
 let curGmIdx = -1; // which GANTT_DATA project is open
 // Live data from Supabase: { 'projectName::phase::subPhase': {id, planned_date, is_completed, ...} }
 let ganttLiveData = {};
+// Milestone-level completion: { 'projectName::phase::subPhase': true }
+let milestoneCompletions = {};
 // Edit modal state
 let gmEditCtx = null; // {projectName, phase, subPhase, currentDate, id}
 // Separate var to track project name when opening live-data (non-GANTT_DATA) project
 let curGmProjName = null;
+
+function getMsKey(projName, phase, subPhase){ return projName + '::' + phase + '::' + subPhase; }
 
 function getMsStatus(dateStr, warnDays, completed){
   if(completed) return {cls:'done', label:'Đã hoàn thành'};
@@ -1505,6 +1652,11 @@ function getMsStatus(dateStr, warnDays, completed){
   if(diff <= warnDays) return {cls:'warn', label:'Còn '+diff+' ngày', diff};
   if(diff <= 90) return {cls:'ok',   label:'Còn '+diff+' ngày', diff};
   return {cls:'future', label:d.toLocaleDateString('vi-VN'), diff};
+}
+
+// Check if a specific milestone is individually completed
+function isMsDone(projName, phase, subPhase){
+  return !!milestoneCompletions[getMsKey(projName, phase, subPhase)];
 }
 
 function getPhaseKey(gdIdx, grp){ return gdIdx+'::'+grp; }
@@ -1518,10 +1670,14 @@ function getProjectWorstStatus(gd, gdIdx, wd){
     const done = phaseCompletions[key];
     if(done){ if(worst==='future'||worst==='ok') worst='done'; continue; }
     for(const m of mss){
-      const s = getMsStatus(m.d, wd, false);
-      if(s.cls==='over') return 'over';
-      if(s.cls==='warn' && worst!=='over') worst = 'warn';
-      else if(s.cls==='ok' && (worst==='future'||worst==='done')) worst = 'ok';
+      // Check milestone-level completion
+      const msKey = getMsKey(gd.n, grp, m.s);
+      const msDone = milestoneCompletions[msKey] || ganttLiveData[msKey]?.is_completed;
+      const s = getMsStatus(m.d, wd, msDone);
+      if(s.cls==='over' && worst!=='over') worst='over';
+      else if(s.cls==='warn' && worst!=='over') worst='warn';
+      else if(s.cls==='ok' && worst==='future') worst='ok';
+      else if(s.cls==='done' && worst==='future') worst='done';
     }
   }
   return worst;
@@ -1545,8 +1701,13 @@ function renderGantt(){
     gd.m.forEach(m => { if(!groups[m.g]) groups[m.g] = []; groups[m.g].push(m); });
     Object.entries(groups).forEach(([grp, mss]) => {
       const key = getPhaseKey(gi, grp);
-      if(phaseCompletions[key]) return;
+      if(phaseCompletions[key]) return; // whole phase done
       mss.forEach(m => {
+        // Check milestone-level completion
+        const msKey = getMsKey(gd.n, grp, m.s);
+        if(milestoneCompletions[msKey]) return; // this milestone done
+        const liveDone = ganttLiveData[msKey]?.is_completed;
+        if(liveDone) return;
         const s = getMsStatus(m.d, wd, false);
         if(s.cls==='over'||s.cls==='warn'){
           lastAlerts.push({gdIdx:gi, projectName:gd.n, phase:grp, sub:m.s, date:m.d, status:s});
@@ -1568,6 +1729,9 @@ function renderGantt(){
   } else {
     alertBar.style.display='none';
   }
+  // Sync k6 dashboard card + bar chart with gantt overdue count
+  updateK6FromGantt();
+  updateChartsFromGantt();
 
   // Build project rows
   // Merge with allProjects for status info
@@ -1843,33 +2007,36 @@ function renderGmDetailWithGd(gd){
     const cards = sorted.map(m => {
       const s = getMsStatus(m.d, wd, isDone);
       const dStr = new Date(m.d).toLocaleDateString('vi-VN', {day:'2-digit',month:'2-digit',year:'numeric'});
-      const colors = {
-        done:  {bg:'rgba(110,231,183,.1)',  border:'rgba(110,231,183,.3)', badge:'#6ee7b7', badgeBg:'rgba(110,231,183,.15)'},
-        ok:    {bg:'rgba(0,194,255,.08)',   border:'rgba(0,194,255,.2)',   badge:'#00c2ff', badgeBg:'rgba(0,194,255,.1)'},
-        warn:  {bg:'rgba(255,179,71,.1)',   border:'rgba(255,179,71,.3)',  badge:'var(--warn)', badgeBg:'rgba(255,179,71,.15)'},
-        over:  {bg:'rgba(255,79,79,.1)',    border:'rgba(255,79,79,.3)',   badge:'var(--danger)', badgeBg:'rgba(255,79,79,.15)'},
-        future:{bg:'rgba(255,255,255,.03)', border:'rgba(255,255,255,.08)',badge:'#5f8aaa', badgeBg:'rgba(255,255,255,.05)'},
-      };
-      const c2 = {done:{bg:'rgba(110,231,183,.1)',border:'rgba(110,231,183,.3)',badge:'#6ee7b7'},
-        ok:{bg:'rgba(0,194,255,.08)',border:'rgba(0,194,255,.2)',badge:'#00c2ff'},
-        warn:{bg:'rgba(255,179,71,.1)',border:'rgba(255,179,71,.3)',badge:'var(--warn)'},
-        over:{bg:'rgba(255,79,79,.1)',border:'rgba(255,79,79,.3)',badge:'var(--danger)'},
-        future:{bg:'rgba(255,255,255,.03)',border:'rgba(255,255,255,.08)',badge:'#5f8aaa'}};
-      const cc = c2[s.cls] || c2.future;
       const msId = m.id || null;
       const safeMsName = m.s.replace(/'/g,"\\'");
       const safeGrpForCard = grp.replace(/'/g,"\\'");
       const safeProjForCard = gd.n.replace(/'/g,"\\'");
-      return `<div class="gm-ms-card" style="background:${cc.bg};border-color:${cc.border};position:relative">
+      // Check per-milestone completion (phase-done OR milestone-done)
+      const msDone = isDone || isMsDone(gd.n, grp, m.s);
+      const sForCard = getMsStatus(m.d, wd, msDone);
+      const c2done = {done:{bg:'rgba(110,231,183,.1)',border:'rgba(110,231,183,.3)',badge:'#6ee7b7'},
+        ok:{bg:'rgba(0,194,255,.08)',border:'rgba(0,194,255,.2)',badge:'#00c2ff'},
+        warn:{bg:'rgba(255,179,71,.1)',border:'rgba(255,179,71,.3)',badge:'var(--warn)'},
+        over:{bg:'rgba(255,79,79,.1)',border:'rgba(255,79,79,.3)',badge:'var(--danger)'},
+        future:{bg:'rgba(255,255,255,.03)',border:'rgba(255,255,255,.08)',badge:'#5f8aaa'}};
+      const cc = c2done[sForCard.cls] || c2done.future;
+      return `<div class="gm-ms-card" style="background:${cc.bg};border-color:${cc.border};position:relative${msDone?';opacity:.75':''}">
+        <!-- Delete button (×) top-right -->
         <button onclick="deleteMilestone('${safeProjForCard}','${safeGrpForCard}','${safeMsName}','${msId||''}',event)"
           style="position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,79,79,.4);background:rgba(255,79,79,.1);color:var(--danger);font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);font-weight:700;transition:all .15s;z-index:10"
           onmouseover="this.style.background='rgba(255,79,79,.3)'" onmouseout="this.style.background='rgba(255,79,79,.1)'"
           title="Xóa cột mốc này">×</button>
-        <div class="ms-name" style="color:${pc.text};cursor:pointer;padding-right:18px"
+        <!-- Complete toggle button (✓) top-left -->
+        <button onclick="toggleMilestoneDone('${safeProjForCard}','${safeGrpForCard}','${safeMsName}','${msId||''}',event)"
+          style="position:absolute;top:6px;left:6px;width:18px;height:18px;border-radius:50%;border:1px solid ${msDone?'#6ee7b7':'rgba(110,231,183,.35)'};background:${msDone?'rgba(110,231,183,.3)':'rgba(110,231,183,.07)'};color:${msDone?'#6ee7b7':'rgba(110,231,183,.6)'};font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--font);font-weight:700;transition:all .2s;z-index:10"
+          onmouseover="this.style.background='rgba(110,231,183,.25)';this.style.borderColor='#6ee7b7';this.style.color='#6ee7b7'"
+          onmouseout="this.style.background='${msDone?'rgba(110,231,183,.3)':'rgba(110,231,183,.07)'}';this.style.borderColor='${msDone?'#6ee7b7':'rgba(110,231,183,.35)'}';this.style.color='${msDone?'#6ee7b7':'rgba(110,231,183,.6)'}'"
+          title="${msDone?'Bỏ đánh dấu hoàn thành':'Đánh dấu đã hoàn thành'}">✓</button>
+        <div class="ms-name" style="color:${pc.text};cursor:pointer;padding:0 22px;text-align:center;${msDone?'text-decoration:line-through;opacity:.7':''}"
           onclick="openMilestoneEdit('${safeProjForCard}','${safeGrpForCard}','${safeMsName}','${m.d}','${msId||''}',event)"
           title="Nhấp để chỉnh sửa ngày">${m.s} <span style="font-size:9px;opacity:.5">✏️</span></div>
         <div class="ms-date" style="color:var(--muted);font-family:var(--mono)">${dStr}</div>
-        <span class="ms-status" style="background:${cc.bg};color:${cc.badge};border:1px solid ${cc.border}">${s.label}</span>
+        <span class="ms-status" style="background:${cc.bg};color:${cc.badge};border:1px solid ${cc.border}">${sForCard.label}</span>
       </div>`;
     }).join('');
 
@@ -2504,7 +2671,7 @@ const KPI_CFG = {
   'CHO_KE_HOACH': { icon:'⏳', title:'Chờ giao kế hoạch',       color:'var(--warn)',      bg:'rgba(255,179,71,.15)', filter: p=>p.trang_thai==='CHO_KE_HOACH',   type:'status' },
   'TRINH_DUYET_DM':{ icon:'📤', title:'Đang trình duyệt DM',    color:'#ff8050',          bg:'rgba(255,128,80,.15)', filter: p=>p.trang_thai==='TRINH_DUYET_DM', type:'status' },
   'VUONG_MAC':     { icon:'⚠️', title:'Có vướng mắc',           color:'var(--warn)',      bg:'rgba(255,179,71,.15)', filter: p=>p.vuong_mac&&p.vuong_mac.trim(), type:'vuong_mac' },
-  'CHAM':          { icon:'🚨', title:'Chậm tiến độ',            color:'var(--danger)',    bg:'rgba(255,79,79,.15)',  filter: p=>p.is_cham_tien_do,               type:'cham' },
+  'CHAM':          { icon:'🚨', title:'Chậm tiến độ (Gantt)',    color:'var(--danger)',    bg:'rgba(255,79,79,.15)',  filter: p=>p.is_cham_tien_do,               type:'cham_gantt' },
 };
 
 function openKpiPopup(key){
@@ -2542,16 +2709,52 @@ function openKpiPopup(key){
           <td class="kpop-name">${p.ten_cong_trinh}</td>
           <td style="color:var(--warn);max-width:420px">${p.vuong_mac}</td>
         </tr>`).join('');
-  } else if(cfg.type==='cham'){
-    headHTML='<tr><th style="width:32px">#</th><th>Tên công trình</th><th>Vướng mắc / Lý do</th><th style="text-align:center">Chậm tiến độ</th></tr>';
-    bodyHTML = !filtered.length
-      ? '<tr><td colspan="4" class="kpop-empty">Không có dự án nào chậm tiến độ ✅</td></tr>'
-      : filtered.map((p,i)=>`<tr style="cursor:pointer" onclick="closeKpiPopup();openDetail('${p.id}')">
-          <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
-          <td class="kpop-name">${p.ten_cong_trinh}</td>
-          <td style="color:var(--warn);max-width:400px">${p.vuong_mac||'<span style="color:rgba(255,255,255,.2)">Chưa ghi lý do</span>'}</td>
-          <td style="text-align:center">${p.is_cham_tien_do?'<span style="font-size:16px">🚨</span>':'–'}</td>
-        </tr>`).join('');
+  } else if(cfg.type==='cham_gantt'){
+    // Build overdue data from lastAlerts (Gantt)
+    const overdueAlerts = lastAlerts.filter(a => a.status.cls === 'over');
+    const byProject = {};
+    overdueAlerts.forEach(a => {
+      if(!byProject[a.projectName]) byProject[a.projectName] = [];
+      byProject[a.projectName].push(a);
+    });
+    const projNames = Object.keys(byProject);
+    badge.textContent = projNames.length + ' dự án';
+    headHTML = `<tr>
+      <th style="width:32px">#</th>
+      <th>Tên công trình</th>
+      <th style="text-align:left;min-width:220px">Giai đoạn quá hạn <span style="font-weight:400;opacity:.6">(nhấp để xem trong Gantt)</span></th>
+      <th style="text-align:center;width:80px">Số mốc</th>
+    </tr>`;
+    if(!projNames.length){
+      bodyHTML = '<tr><td colspan="4" class="kpop-empty">Không có dự án nào quá hạn ✅</td></tr>';
+    } else {
+      bodyHTML = projNames.map((projName, i) => {
+        const alerts = byProject[projName];
+        const phases = [...new Set(alerts.map(a => a.phase))];
+        const nm = projName.length > 65 ? projName.substring(0,65)+'…' : projName;
+        const gdIdx = GANTT_DATA.findIndex(gd => {
+          const gn = gd.n.replace(/\s+/g,' ').trim().toLowerCase();
+          const pn = projName.replace(/\s+/g,' ').trim().toLowerCase();
+          return gn.includes(pn.substring(0,25)) || pn.includes(gn.substring(0,25));
+        });
+        const phaseTags = phases.map(phase => {
+          const pc = PHASE_COLORS[phase] || {bg:'rgba(255,79,79,.08)',border:'rgba(255,79,79,.3)',text:'var(--danger)'};
+          const cnt = alerts.filter(a=>a.phase===phase).length;
+          const safeProj = projName.replace(/'/g,"\\'");
+          const safePhase = phase.replace(/'/g,"\\'");
+          return `<span class="g-phase-tag" style="color:${pc.text};background:${pc.bg};border-color:${pc.border};cursor:pointer;transition:opacity .15s"
+            onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'"
+            onclick="gotoGanttPhase('${safeProj}',${gdIdx},'${safePhase}',event)"
+            title="Xem ${phase} trong Gantt · ${cnt} mốc quá hạn">${phase} <span style="font-size:9px;background:rgba(255,79,79,.25);padding:1px 5px;border-radius:3px;margin-left:2px">${cnt}</span></span>`;
+        }).join(' ');
+        return `<tr>
+          <td style="color:var(--muted);font-family:var(--mono);font-size:10px;vertical-align:middle">${i+1}</td>
+          <td class="kpop-name" style="vertical-align:middle">${nm}</td>
+          <td style="vertical-align:middle;padding:8px 12px"><div style="display:flex;flex-wrap:wrap;gap:5px">${phaseTags}</div></td>
+          <td style="text-align:center;vertical-align:middle;font-family:var(--mono);color:var(--danger);font-weight:700">${alerts.length}</td>
+        </tr>`;
+      }).join('');
+    }
   }
 
   document.getElementById('kpopHead').innerHTML = headHTML;
@@ -2563,6 +2766,33 @@ function openKpiPopup(key){
 function closeKpiPopup(){
   document.getElementById('kpiPopup').classList.remove('open');
   document.body.style.overflow='';
+}
+
+// Navigate to Gantt tab, open project detail filtered to a specific overdue phase
+function gotoGanttPhase(projName, gdIdx, phase, event){
+  if(event) event.stopPropagation();
+  closeKpiPopup();
+  // Switch to Gantt tab
+  const ganttTabBtn = document.querySelector('.ntab[onclick*="gantt"]');
+  if(ganttTabBtn) switchTab('gantt', ganttTabBtn);
+  // Open the Gantt modal for this project (small delay to let tab render)
+  setTimeout(() => {
+    if(gdIdx >= 0 && GANTT_DATA[gdIdx]){
+      openGanttModal(gdIdx, projName);
+    } else {
+      openGanttModalLive(projName);
+    }
+    // Scroll phase section into view after modal renders
+    setTimeout(() => {
+      const sections = document.querySelectorAll('.gm-phase-hdr h3');
+      for(const s of sections){
+        if(s.textContent.trim() === phase){
+          s.closest('.gm-phase-section')?.scrollIntoView({behavior:'smooth', block:'start'});
+          break;
+        }
+      }
+    }, 200);
+  }, 150);
 }
 
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeKpiPopup(); closeDocViewer(); } });
