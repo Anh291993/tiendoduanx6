@@ -540,8 +540,11 @@ textarea.fc{resize:vertical;min-height:80px}
     </div>
     <nav>
       <button class="ntab active" onclick="switchTab('dashboard',this)">📊 Dashboard</button>
-      <button class="ntab" onclick="switchTab('projects',this)">📋 Dự án</button>
+      <button class="ntab" onclick="switchTab('projects',this)">📋 Dự án ĐTXD</button>
+      <button class="ntab" onclick="switchTab('scl',this)">🔧 Dự án SCL</button>
+      <button class="ntab" onclick="switchTab('sctx',this)">🛠 Dự án SCTX</button>
       <button class="ntab" onclick="switchTab('gantt',this)">📅 Gantt</button>
+	<button class="ntab" onclick="switchTab('gantt_scl', this)">📊 Gantt SCL</button>
       <button class="ntab" onclick="switchTab('log',this)">📜 Nhật ký</button>
     </nav>
     <div class="h-right">
@@ -607,7 +610,7 @@ textarea.fc{resize:vertical;min-height:80px}
 
     <!-- ── TAB DỰ ÁN ── -->
     <div id="tab-projects" class="tab-panel">
-      <div class="sec-h">🔍 Bộ lọc</div>
+      <div class="sec-h">🔍 Bộ lọc - ĐTXD/ĐTMS</div>
       <div class="filter-bar">
         <div class="filter-grid">
           <div class="fg"><label>Trạng thái</label>
@@ -655,13 +658,116 @@ textarea.fc{resize:vertical;min-height:80px}
               <th>TT</th><th>Tên công trình</th><th>Nguồn vốn</th><th>Trạng thái</th>
               <th>Tiến độ thực hiện</th><th>Vướng mắc</th><th>Phụ trách</th><th>Phối hợp</th><th>Thao tác</th>
             </tr></thead>
-            <tbody id="tBody"><tr><td colspan="9" class="empty-state"><div class="sp"></div><div>Đang tải…</div></td></tr></tbody>
+            <tbody id="tBody"><tr><td colspan="8" class="empty-state"><div class="sp"></div><div>Đang tải…</div></td></tr></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- ── TAB GANTT ── -->
+    <!-- ── TAB DỰ ÁN SCL ── -->
+    <div id="tab-scl" class="tab-panel">
+      <div class="sec-h">🔍 Bộ lọc – Sửa chữa lớn</div>
+      <div class="filter-bar">
+        <div class="filter-grid">
+          <div class="fg"><label>Trạng thái</label>
+            <select id="sclStatus" onchange="applySCLFilter()">
+              <option value="">Tất cả</option>
+              <option value="CHUYEN_TIEP">Chuyển tiếp</option>
+              <option value="GIAO_KHCP">Giao KHCP</option>
+              <option value="THONG_QUA">Thông qua</option>
+              <option value="TRINH_DM">Trình DM</option>
+            </select>
+          </div>
+          <div class="fg"><label>Tình trạng</label>
+            <select id="sclFlag" onchange="applySCLFilter()">
+              <option value="">Tất cả</option>
+              <option value="vuong_mac">Có vướng mắc</option>
+              <option value="cham">Chậm tiến độ</option>
+            </select>
+          </div>
+          <div class="fg"><label>Tìm theo tên</label>
+            <input id="sclSearch" type="text" placeholder="Từ khóa…" oninput="applySCLFilter()"/>
+          </div>
+          <div class="fg"><label>Phụ trách</label>
+            <select id="sclCV" onchange="applySCLFilter()">
+              <option value="">Tất cả</option>
+            </select>
+          </div>
+        </div>
+        <div class="fa">
+          <button class="btn bp" onclick="applySCLFilter()">🔍 Lọc</button>
+          <button class="btn bg" onclick="resetSCLFilter()">↺ Đặt lại</button>
+          <button class="btn bs" onclick="exportSCLExcel()" style="margin-left:auto">📥 Xuất Excel</button>
+          <button class="btn bn" onclick="openSCLNewProject()" style="background:linear-gradient(135deg,#00e5b0,#00a88a);color:#0b1929;font-weight:800;border:none">＋ Tạo dự án mới</button>
+          <button class="btn bo" onclick="openSCLProgressModal()">✏️ Cập nhật tiến độ</button>
+        </div>
+      </div>
+      <div class="tbl-card">
+        <div class="tbl-head"><h2>Danh sách công trình SCL</h2><span class="tbl-meta" id="sclTableCount">0 công trình</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>STT</th><th>Tên công trình</th><th>Trạng thái</th>
+              <th>Tiến độ thực hiện</th><th>Vướng mắc</th><th>Phụ trách</th><th>Phối hợp</th><th>Thao tác</th>
+            </tr></thead>
+            <tbody id="sclBody"><tr><td colspan="9" class="empty-state"><div class="sp"></div><div>Đang tải…</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB DỰ ÁN SCTX ── -->
+    <div id="tab-sctx" class="tab-panel">
+      <div class="sec-h">&#128269; B&#7897; l&#7885;c &#8211; S&#7917;a ch&#7919;a th&#432;&#7901;ng xuy&#234;n</div>
+      <div class="filter-bar">
+        <div class="filter-grid">
+          <div class="fg"><label>Tr&#7841;ng th&#225;i</label>
+            <select id="sctxStatus" onchange="applySCTXFilter()">
+              <option value="">T&#7845;t c&#7843;</option>
+              <option value="P4">P04 &#8211; &#272;ang tri&#7875;n khai</option>
+              <option value="P2">P02/P08 &#8211; &#272;ang tri&#7875;n khai</option>
+            </select>
+          </div>
+          <div class="fg"><label>T&#236;nh tr&#7841;ng</label>
+            <select id="sctxFlag" onchange="applySCTXFilter()">
+              <option value="">T&#7845;t c&#7843;</option>
+              <option value="vuong_mac">C&#243; v&#432;&#7899;ng m&#7855;c</option>
+              <option value="cham">Ch&#7853;m ti&#7871;n &#273;&#7897;</option>
+            </select>
+          </div>
+          <div class="fg"><label>T&#236;m theo t&#234;n</label>
+            <input id="sctxSearch" type="text" placeholder="T&#7915; kh&#243;a&#8230;" oninput="applySCTXFilter()"/>
+          </div>
+          <div class="fg"><label>Ph&#7909; tr&#225;ch</label>
+            <select id="sctxCV" onchange="applySCTXFilter()">
+              <option value="">T&#7845;t c&#7843;</option>
+            </select>
+          </div>
+        </div>
+        <div class="fa">
+          <button class="btn bp" onclick="applySCTXFilter()">&#128269; L&#7885;c</button>
+          <button class="btn bg" onclick="resetSCTXFilter()">&#8634; &#272;&#7863;t l&#7841;i</button>
+          <button class="btn bs" onclick="exportSCTXExcel()" style="margin-left:auto">&#128229; Xu&#7845;t Excel</button>
+          <button class="btn bn" onclick="openSCTXNewProject()" style="background:linear-gradient(135deg,#f59e0b,#f97316);color:#0b1929;font-weight:800;border:none">&#65291; T&#7841;o m&#7899;i</button>
+          <button class="btn bo" onclick="openSCTXProgressModal()">&#9999;&#65039; C&#7853;p nh&#7853;t ti&#7871;n &#273;&#7897;</button>
+          <button class="btn bw" onclick="openSCTXFlagModal()">&#127937; Flag</button>
+        </div>
+      </div>
+      <div class="tbl-card">
+        <div class="tbl-head"><h2>Danh s&#225;ch c&#244;ng tr&#236;nh SCTX</h2><span class="tbl-meta" id="sctxTableCount">0 c&#244;ng tr&#236;nh</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>STT</th><th>T&#234;n c&#244;ng tr&#236;nh</th><th>Tr&#7841;ng th&#225;i</th>
+              <th>Ti&#7871;n &#273;&#7897; th&#7921;c hi&#7879;n</th><th>V&#432;&#7899;ng m&#7855;c</th><th>Ph&#7909; tr&#225;ch</th><th>Ph&#7889;i h&#7907;p</th><th>Thao t&#225;c</th>
+            </tr></thead>
+            <tbody id="sctxBody"><tr><td colspan="8" class="empty-state"><div class="sp"></div><div>&#272;ang t&#7843;i&#8230;</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB DỰ ÁN GANTT ── -->
     <div id="tab-gantt" class="tab-panel">
       <div id="ganttWrap">
         <!-- Header bar -->
@@ -701,6 +807,47 @@ textarea.fc{resize:vertical;min-height:80px}
           <span style="margin-left:auto;font-size:11px;color:var(--muted);font-family:var(--font)">👆 Click vào dự án để xem Gantt full màn hình</span>
         </div>
         <div id="ganttCanvas"></div>
+      </div>
+    </div>
+
+<!-- ── TAB GANTT SCL ── -->
+<div id="tab-gantt-scl" class="tab-panel" style="display:none;">
+      <div id="ganttSclWrap">
+        <div class="gantt-hdr" style="flex-wrap:wrap;gap:10px;padding:14px 20px">
+          <h2 style="margin:0;font-size:15px;font-family:var(--font)">📅 Biểu đồ Gantt – Phân kỳ dự án SCL</h2>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto">
+            <select id="ganttSclFilter" class="fc" style="width:170px;padding:5px 10px;font-size:12px" onchange="renderGanttScl()">
+              <option value="">Tất cả trạng thái</option>
+              <option value="TRINH_DM">Trình DM</option>
+              <option value="THONG_QUA">Thông qua</option>
+              <option value="GIAO_KHCP">Giao KHCP</option>
+              <option value="CHUYEN_TIEP">Chuyển tiếp</option>
+            </select>
+            <div style="display:flex;align-items:center;gap:6px;background:rgba(255,179,71,.12);border:1px solid rgba(255,179,71,.3);border-radius:8px;padding:5px 12px;font-family:var(--font)">
+              <span style="font-size:12px">⏰ Cảnh báo trước</span>
+              <input id="warnDaysScl" type="number" min="1" max="90" value="14"
+                style="width:52px;padding:3px 6px;font-size:12px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);border-radius:5px;color:#fff;text-align:center;font-family:var(--mono)"
+                onchange="renderGanttScl()">
+              <span style="font-size:12px">ngày</span>
+            </div>
+            <button class="btn" onclick="checkAndSendAlertsScl()" style="background:rgba(255,79,79,.15);border:1px solid rgba(255,79,79,.4);color:var(--danger);font-size:12px;padding:5px 14px;font-family:var(--font)">
+              🔔 Kiểm tra &amp; Gửi cảnh báo
+            </button>
+          </div>
+        </div>
+        <div id="ganttSclAlertBar" onclick="openAlertTableScl()" style="display:none;background:rgba(255,79,79,.08);border-left:3px solid var(--danger);margin:0 16px 12px;padding:10px 16px;border-radius:6px;font-size:13px;cursor:pointer;transition:background .2s;font-family:var(--font)"
+          onmouseover="this.style.background='rgba(255,79,79,.14)'" onmouseout="this.style.background='rgba(255,79,79,.08)'"></div>
+        <div style="display:flex;gap:8px;padding:6px 16px 14px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;color:var(--muted);margin-right:4px;font-family:var(--font)">Lọc theo:</span>
+          <button class="g-legend-btn-scl active" data-status="" onclick="setGanttSclStatusFilter(this,'')">📋 Tất cả</button>
+          <button class="g-legend-btn-scl" data-status="done" onclick="setGanttSclStatusFilter(this,'done')"><span style="width:9px;height:9px;border-radius:50%;background:#6ee7b7;display:inline-block;margin-right:4px"></span>Hoàn thành</button>
+          <button class="g-legend-btn-scl" data-status="ok" onclick="setGanttSclStatusFilter(this,'ok')"><span style="width:9px;height:9px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:4px"></span>Đúng tiến độ</button>
+          <button class="g-legend-btn-scl" data-status="warn" onclick="setGanttSclStatusFilter(this,'warn')"><span style="width:9px;height:9px;border-radius:50%;background:var(--warn);display:inline-block;margin-right:4px"></span>Sắp đến hạn</button>
+          <button class="g-legend-btn-scl" data-status="over" onclick="setGanttSclStatusFilter(this,'over')"><span style="width:9px;height:9px;border-radius:50%;background:var(--danger);display:inline-block;margin-right:4px"></span>Quá hạn</button>
+          <button class="g-legend-btn-scl" data-status="future" onclick="setGanttSclStatusFilter(this,'future')"><span style="width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.25);display:inline-block;margin-right:4px"></span>Chưa đến</button>
+          <span style="margin-left:auto;font-size:11px;color:var(--muted);font-family:var(--font)">👆 Click vào dự án để xem Gantt full màn hình</span>
+        </div>
+        <div id="ganttSclCanvas"></div>
       </div>
     </div>
 
@@ -1101,6 +1248,169 @@ textarea.fc{resize:vertical;min-height:80px}
   </div>
 </div>
 
+<!-- ═══ MODAL: Cập nhật tiến độ SCL ═══ -->
+<div class="overlay" id="mSCLProg">
+  <div class="modal" style="max-width:500px">
+    <div class="mh"><span style="font-size:18px">🔧</span><h3>Cập nhật tiến độ SCL</h3><button class="mclose" onclick="closeM('mSCLProg')">×</button></div>
+    <div class="mb">
+      <div><label class="fl">Công trình</label>
+        <input id="scl_p1Name" class="fc" readonly style="background:rgba(255,255,255,.05);cursor:default;color:var(--accent);font-weight:600"/>
+        <input type="hidden" id="scl_p1Id"/>
+      </div>
+      <div><label class="fl">Nội dung tiến độ mới <span style="color:var(--danger)">*</span></label>
+        <textarea id="scl_p1TD" class="fc" placeholder="Mô tả chi tiết tình trạng triển khai…"></textarea></div>
+      <div><label class="fl">Vướng mắc (để trống nếu không có)</label>
+        <textarea id="scl_p1VM" class="fc" style="min-height:60px" placeholder="Mô tả khó khăn, vướng mắc…"></textarea></div>
+      <div class="chkr"><input type="checkbox" id="scl_p1Cham"/><label for="scl_p1Cham">🚨 Đánh dấu <strong>chậm tiến độ</strong></label></div>
+      <div><label class="fl">Người cập nhật</label><input id="scl_p1Nguoi" class="fc" placeholder="VD: Vũ Xuân Thi, Đinh Anh Dũng…"/></div>
+      <div>
+        <label class="fl">📎 Tài liệu đính kèm (PDF hoặc Word, tối đa 20MB)</label>
+        <div class="upload-zone" id="sclUploadZone" onclick="document.getElementById('sclFileInput').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');sclHandleFileDrop(event)">
+          <input type="file" id="sclFileInput" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onchange="sclHandleFileSelect(event)"/>
+          <div class="uz-icon">📄</div>
+          <div class="uz-label">Kéo thả file vào đây hoặc <strong>nhấn để chọn</strong></div>
+          <div class="uz-hint">Hỗ trợ: PDF, DOC, DOCX · Tối đa 20MB</div>
+        </div>
+        <div id="sclFilePreview" style="display:none" class="file-preview">
+          <span class="fp-icon" id="sclFpIcon">📄</span>
+          <div class="fp-info">
+            <div class="fp-name" id="sclFpName"></div>
+            <div class="fp-size" id="sclFpSize"></div>
+            <div class="upload-progress" id="sclUploadProgressBar" style="display:none">
+              <div class="upload-progress-bar" id="sclUploadBar"></div>
+            </div>
+          </div>
+          <button class="fp-remove" onclick="sclClearFileInput()" title="Bỏ file">×</button>
+        </div>
+        <div><label class="fl" style="margin-top:10px">Mô tả tài liệu (tùy chọn)</label>
+          <input id="scl_p1DocDesc" class="fc" placeholder="VD: Biên bản họp tháng 3/2026…"/>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('mSCLProg')">Hủy</button><button class="btn bp" onclick="submitSCLProg()">💾 Lưu tiến độ</button></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Flag công trình SCL ═══ -->
+<div class="overlay" id="mSCLFlag">
+  <div class="modal" style="max-width:460px">
+    <div class="mh"><span style="font-size:18px">🚩</span><h3>Flag trạng thái công trình SCL</h3><button class="mclose" onclick="closeM('mSCLFlag')">×</button></div>
+    <div class="mb">
+      <div><label class="fl">Công trình</label><select id="scl_p2Proj" class="fc"></select></div>
+      <div>
+        <label class="fl">Loại cập nhật <span style="color:var(--danger)">*</span></label>
+        <select id="scl_p2FT" class="fc" onchange="onSCLFlagChg()">
+          <option value="">– Chọn –</option>
+          <option value="VUONG_MAC">⚠️ Đánh dấu vướng mắc</option>
+          <option value="CLEAR_VUONG_MAC">✅ Xóa vướng mắc</option>
+          <option value="CHAM_TIEN_DO">🚨 Đánh dấu chậm tiến độ</option>
+          <option value="BINH_THUONG">🟢 Đặt lại bình thường</option>
+          <option value="THAY_DOI_TRANG_THAI">🔄 Chuyển trạng thái</option>
+        </select>
+      </div>
+      <div id="sclGMoTa"><label class="fl">Mô tả / lý do</label><textarea id="scl_p2MT" class="fc" style="min-height:65px" placeholder="Chi tiết…"></textarea></div>
+      <div id="sclGTS" style="display:none">
+        <label class="fl">Chuyển sang trạng thái</label>
+        <select id="scl_p2TS" class="fc">
+          <option value="CHUYEN_TIEP">Chuyển tiếp</option>
+          <option value="GIAO_KHCP">Giao KHCP</option>
+          <option value="THONG_QUA">Thông qua</option>
+          <option value="TRINH_DM">Trình DM</option>
+        </select>
+      </div>
+      <div><label class="fl">Người thực hiện</label><input id="scl_p2Nguoi" class="fc" placeholder="Họ và tên…"/></div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('mSCLFlag')">Hủy</button><button class="btn bo" onclick="submitSCLFlag()">🚩 Xác nhận</button></div>
+  </div>
+</div>
+<div class="overlay" id="mSCLNewProj">
+  <div class="modal" style="max-width:560px">
+    <div class="mh"><span style="font-size:18px">🆕</span><h3>Tạo công trình SCL mới</h3><button class="mclose" onclick="closeM('mSCLNewProj')">×</button></div>
+    <div class="mb">
+      <div>
+        <label class="fl">Tên công trình <span style="color:var(--danger)">*</span></label>
+        <textarea id="scl_np_ten" class="fc" style="min-height:60px" placeholder="Nhập tên đầy đủ của công trình SCL…"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="fl">Trạng thái <span style="color:var(--danger)">*</span></label>
+          <select id="scl_np_tt" class="fc">
+            <option value="TRINH_DM">Trình DM</option>
+            <option value="THONG_QUA">Thông qua</option>
+            <option value="GIAO_KHCP">Giao KHCP</option>
+            <option value="CHUYEN_TIEP">Chuyển tiếp</option>
+          </select>
+        </div>
+        <div class="chkr" style="margin-top:25px"><input type="checkbox" id="scl_np_cham"/><label for="scl_np_cham">🚨 Đánh dấu chậm tiến độ</label></div>
+      </div>
+      <div>
+        <label class="fl">Tiến độ thực hiện</label>
+        <textarea id="scl_np_tiendo" class="fc" style="min-height:60px" placeholder="Mô tả tình trạng triển khai hiện tại…"></textarea>
+      </div>
+      <div>
+        <label class="fl">Vướng mắc</label>
+        <textarea id="scl_np_vm" class="fc" style="min-height:55px" placeholder="Mô tả khó khăn nếu có, để trống nếu không…"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="fl">Phụ trách</label>
+          <input id="scl_np_pt" class="fc" placeholder="Họ tên người/đơn vị phụ trách…"/>
+        </div>
+        <div>
+          <label class="fl">Phối hợp</label>
+          <input id="scl_np_ph" class="fc" placeholder="Họ tên người/đơn vị phối hợp…"/>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('mSCLNewProj')">Hủy</button>
+      <button class="btn bn" onclick="submitSCLNewProject()" style="background:linear-gradient(135deg,#00e5b0,#00a88a);color:#0b1929;font-weight:800;border:none">🆕 Tạo công trình</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="mSCLDetail">
+  <div class="modal" style="max-width:640px">
+    <div class="mh"><span style="font-size:18px">📁</span><h3 id="sclDetailTitle">Chi tiết công trình SCL</h3><button class="mclose" onclick="closeM('mSCLDetail')">×</button></div>
+    <div class="mb">
+      <div class="mtabs">
+        <button class="mtab active" onclick="switchSCLTab('sclDtInfo',this)">Thông tin</button>
+        <button class="mtab" onclick="switchSCLTab('sclDtLog',this)">📜 Lịch sử cập nhật</button>
+        <button class="mtab" onclick="switchSCLTab('sclDtDocs',this)">📎 Tài liệu <span id="sclDtDocsCount" style="background:rgba(0,194,255,.2);color:var(--accent);padding:1px 6px;border-radius:10px;font-size:9px;margin-left:3px">0</span></button>
+      </div>
+      <div id="sclDtInfo">
+        <div class="info-grid" id="sclDetailMeta"></div>
+        <div style="margin-top:16px">
+          <label class="fl">Tiến độ hiện tại</label>
+          <div id="sclDetailProg" style="font-size:13px;color:var(--text);line-height:1.6;background:rgba(0,0,0,.2);padding:12px;border-radius:8px;border:1px solid var(--border)"></div>
+        </div>
+        <div id="sclDetailVM" style="margin-top:12px"></div>
+      </div>
+      <div id="sclDtLog" style="display:none">
+        <div id="sclProjLog" class="proj-log-list">
+          <div class="empty-state"><div class="sp"></div></div>
+        </div>
+      </div>
+      <div id="sclDtDocs" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:11px;color:var(--muted)">Tài liệu đính kèm của công trình này</span>
+          <button class="btn bp" style="padding:5px 12px;font-size:11px" onclick="openSCLProgressModal(curSCLDetailId);closeM('mSCLDetail')">+ Đính kèm tài liệu mới</button>
+        </div>
+        <div id="sclDocList" class="doc-list"><div class="empty-state"><div class="sp"></div></div></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('mSCLDetail')">Đóng</button>
+      <button class="btn bp" onclick="closeM('mSCLDetail');openSCLProgressModal(curSCLDetailId)">✏️ Cập nhật tiến độ</button>
+      <button class="btn bw" onclick="closeM('mSCLDetail');openSCLFlagModal(curSCLDetailId)">🚩 Flag</button>
+    </div>
+  </div>
+</div>
+
 <div id="toastWrap"></div>
 
 <!-- ════════════════════ SCRIPT ════════════════════ -->
@@ -1413,6 +1723,27 @@ async function loadGanttFromSupabase(){
     ganttLiveData = {};
     milestoneCompletions = {};
     phaseCompletions = {};
+
+    // ── Build GANTT_DATA dynamically from Supabase ──────────────────
+    if(data && data.length > 0){
+      const _phaseOrder = ['FS','BVTC','KHLCNT','Dự toán gói thầu','E-HSMT','KQLCNT','Hợp đồng'];
+      const _projMap = {};
+      data.forEach(row => {
+        if(!_projMap[row.project_name]) _projMap[row.project_name] = [];
+        _projMap[row.project_name].push(row);
+      });
+      GANTT_DATA = Object.entries(_projMap).map(([name, rows]) => {
+        rows.sort((a, b) => {
+          const pi = (_phaseOrder.indexOf(a.phase) === -1 ? 99 : _phaseOrder.indexOf(a.phase))
+                   - (_phaseOrder.indexOf(b.phase) === -1 ? 99 : _phaseOrder.indexOf(b.phase));
+          if(pi !== 0) return pi;
+          return (parseInt(a.sort_order) || 0) - (parseInt(b.sort_order) || 0);
+        });
+        return { n: name, m: rows.map(r => ({ g: r.phase, s: r.sub_phase, d: r.planned_date })) };
+      });
+      console.log('Built GANTT_DATA from Supabase:', GANTT_DATA.length, 'projects');
+    }
+    // ────────────────────────────────────────────────────────────────
 
     if(data) data.forEach(row => {
       const key = row.project_name + '::' + row.phase + '::' + row.sub_phase;
@@ -1801,8 +2132,8 @@ async function togglePhaseDoneWithSave(projName, gdIdx, grp){
 
 
 // ─── GANTT PHÂN KỲ DỰ ÁN ────────────────────────────────────────
-// Dữ liệu phân kỳ từ Excel ĐTXD (25 dự án, 7 giai đoạn)
-const GANTT_DATA = [{"n":"Bổ sung hệ thống truy cập và tự động đọc bản ghi sự cố rơle từ xa 06 TBA 110kV.","m":[{"g":"KHLCNT","s":"Lập","d":"2025-02-25"},{"g":"KHLCNT","s":"Thẩm định","d":"2025-02-26"},{"g":"KHLCNT","s":"Phê duyệt","d":"2025-02-28"},{"g":"Dự toán gói thầu","s":"Lập","d":"2025-03-01"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2025-03-04"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2025-03-06"},{"g":"E-HSMT","s":"Lập","d":"2025-03-11"},{"g":"E-HSMT","s":"Thẩm định","d":"2025-03-14"},{"g":"E-HSMT","s":"Phê duyệt","d":"2025-03-16"},{"g":"E-HSMT","s":"Phát hành","d":"2025-03-16"},{"g":"E-HSMT","s":"Mở thầu","d":"2025-03-31"},{"g":"E-HSMT","s":"Đánh giá","d":"2025-04-15"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2025-04-20"},{"g":"KQLCNT","s":"Thẩm định","d":"2025-04-25"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2025-04-28"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2025-05-05"},{"g":"Hợp đồng","s":"NT VTTB","d":"2025-08-03"},{"g":"Hợp đồng","s":"Khởi công","d":"2025-08-13"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2025-10-12"}]},{"n":"Cải tạo hệ thống điều khiển bảo vệ trạm 110kV E1.42 Sân bay Nội Bài","m":[{"g":"KHLCNT","s":"Lập","d":"2025-02-25"},{"g":"KHLCNT","s":"Thẩm định","d":"2025-02-26"},{"g":"KHLCNT","s":"Phê duyệt","d":"2025-02-28"},{"g":"Dự toán gói thầu","s":"Lập","d":"2025-03-01"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2025-03-04"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2025-03-06"},{"g":"E-HSMT","s":"Lập","d":"2025-03-11"},{"g":"E-HSMT","s":"Thẩm định","d":"2025-03-14"},{"g":"E-HSMT","s":"Phê duyệt","d":"2025-03-16"},{"g":"E-HSMT","s":"Phát hành","d":"2025-03-16"},{"g":"E-HSMT","s":"Mở thầu","d":"2025-03-31"},{"g":"E-HSMT","s":"Đánh giá","d":"2025-04-15"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2025-04-20"},{"g":"KQLCNT","s":"Thẩm định","d":"2025-04-25"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2025-04-28"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2025-05-05"},{"g":"Hợp đồng","s":"NT VTTB","d":"2025-07-04"},{"g":"Hợp đồng","s":"Khởi công","d":"2025-07-14"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2025-10-12"}]},{"n":"Cải tạo hệ thống điều khiển bảo vệ trạm 110kV E1.31 Trôi","m":[{"g":"KHLCNT","s":"Lập","d":"2025-02-25"},{"g":"KHLCNT","s":"Thẩm định","d":"2025-02-26"},{"g":"KHLCNT","s":"Phê duyệt","d":"2025-02-28"},{"g":"Dự toán gói thầu","s":"Lập","d":"2025-03-01"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2025-03-04"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2025-03-06"},{"g":"E-HSMT","s":"Lập","d":"2025-03-11"},{"g":"E-HSMT","s":"Thẩm định","d":"2025-03-14"},{"g":"E-HSMT","s":"Phê duyệt","d":"2025-03-16"},{"g":"E-HSMT","s":"Phát hành","d":"2025-03-16"},{"g":"E-HSMT","s":"Mở thầu","d":"2025-03-31"},{"g":"E-HSMT","s":"Đánh giá","d":"2025-04-15"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2025-04-20"},{"g":"KQLCNT","s":"Thẩm định","d":"2025-04-25"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2025-04-28"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2025-05-05"},{"g":"Hợp đồng","s":"NT VTTB","d":"2025-07-04"},{"g":"Hợp đồng","s":"Khởi công","d":"2025-07-14"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2025-10-12"}]},{"n":"Cải tạo hệ thống điều khiển bảo vệ trạm 110kV E1.36 Quang Minh","m":[{"g":"KHLCNT","s":"Lập","d":"2025-02-25"},{"g":"KHLCNT","s":"Thẩm định","d":"2025-02-26"},{"g":"KHLCNT","s":"Phê duyệt","d":"2025-02-28"},{"g":"Dự toán gói thầu","s":"Lập","d":"2025-03-01"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2025-03-04"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2025-03-06"},{"g":"E-HSMT","s":"Lập","d":"2025-03-11"},{"g":"E-HSMT","s":"Thẩm định","d":"2025-03-14"},{"g":"E-HSMT","s":"Phê duyệt","d":"2025-03-16"},{"g":"E-HSMT","s":"Phát hành","d":"2025-03-16"},{"g":"E-HSMT","s":"Mở thầu","d":"2025-03-31"},{"g":"E-HSMT","s":"Đánh giá","d":"2025-04-15"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2025-04-20"},{"g":"KQLCNT","s":"Thẩm định","d":"2025-04-25"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2025-04-28"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2025-05-05"},{"g":"Hợp đồng","s":"NT VTTB","d":"2025-07-04"},{"g":"Hợp đồng","s":"Khởi công","d":"2025-07-14"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2025-10-12"}]},{"n":"Cải tạo hệ thống điều khiển bảo vệ phía 110kV; thay thế hệ thống tủ trung thế C41, C42 E1.33 Cầu Diễn","m":[{"g":"FS","s":"Phê duyệt","d":"2026-04-01"},{"g":"BVTC","s":"Lập","d":"2026-05-01"},{"g":"BVTC","s":"Phê duyệt","d":"2026-06-30"},{"g":"KHLCNT","s":"Lập","d":"2026-06-30"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-07-01"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-07-03"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-07-08"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-07-13"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-07-15"},{"g":"E-HSMT","s":"Lập","d":"2026-07-22"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-07-27"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-07-29"},{"g":"E-HSMT","s":"Phát hành","d":"2026-07-29"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-08-16"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-08-31"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-09-05"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-09-08"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-09-11"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-09-16"},{"g":"Hợp đồng","s":"NT VTTB","d":"2026-12-15"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-12-25"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-03-25"}]},{"n":"Cải tạo hệ thống điều khiển bảo vệ trạm 110kV E1.37 Bắc An Khánh","m":[{"g":"FS","s":"Phê duyệt","d":"2026-03-31"},{"g":"KHLCNT","s":"Lập","d":"2026-04-20"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-04-21"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-04-23"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-04-24"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-04-27"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-04-29"},{"g":"E-HSMT","s":"Lập","d":"2026-05-04"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-05-07"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-05-09"},{"g":"E-HSMT","s":"Phát hành","d":"2026-05-09"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-05-24"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-06-08"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-06-13"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-06-18"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-06-21"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-06-28"},{"g":"Hợp đồng","s":"NT VTTB","d":"2026-08-27"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-09-06"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2026-12-05"}]},{"n":"Nâng công suất T3 TBA 110kV Linh Đàm","m":[{"g":"FS","s":"HĐ tư vấn","d":"2026-02-13"},{"g":"FS","s":"Lập","d":"2026-03-30"},{"g":"FS","s":"Phê duyệt","d":"2026-04-14"},{"g":"KHLCNT","s":"Lập","d":"2026-04-29"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-04-30"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-05-02"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-05-03"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-05-06"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-05-08"},{"g":"E-HSMT","s":"Lập","d":"2026-05-13"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-05-16"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-05-18"},{"g":"E-HSMT","s":"Phát hành","d":"2026-05-18"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-06-02"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-06-17"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-06-22"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-06-27"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-06-30"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-07-07"},{"g":"Hợp đồng","s":"NT VTTB","d":"2026-08-06"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-08-16"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2026-09-15"}]},{"n":"Lắp MBA T3 trạm 110kV Ngọc Hồi","m":[{"g":"FS","s":"HĐ tư vấn","d":"2026-03-15"},{"g":"FS","s":"Lập","d":"2026-04-29"},{"g":"FS","s":"Phê duyệt","d":"2026-05-29"},{"g":"BVTC","s":"Lập","d":"2026-06-28"},{"g":"BVTC","s":"Phê duyệt","d":"2026-07-28"},{"g":"KHLCNT","s":"Lập","d":"2026-07-28"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-07-29"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-07-31"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-08-01"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-08-04"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-08-06"},{"g":"E-HSMT","s":"Lập","d":"2026-08-11"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-08-14"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-08-16"},{"g":"E-HSMT","s":"Phát hành","d":"2026-08-16"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-09-03"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-09-18"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-09-23"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-09-28"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-10-01"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-10-08"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-03-07"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-10-18"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-04-26"}]},{"n":"Nâng công suất MBA T2 TBA 110kV Sân bay Nội Bài","m":[{"g":"FS","s":"HĐ tư vấn","d":"2026-02-13"},{"g":"FS","s":"Lập","d":"2026-03-30"},{"g":"FS","s":"Phê duyệt","d":"2026-04-14"},{"g":"KHLCNT","s":"Lập","d":"2026-04-29"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-04-30"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-05-02"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-05-03"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-05-06"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-05-08"},{"g":"E-HSMT","s":"Lập","d":"2026-05-13"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-05-16"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-05-18"},{"g":"E-HSMT","s":"Phát hành","d":"2026-05-18"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-06-02"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-06-17"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-06-22"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-06-27"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-06-30"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-07-07"},{"g":"Hợp đồng","s":"NT VTTB","d":"2026-08-06"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-08-16"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2026-09-15"}]},{"n":"Lắp MBA T3 trạm 110kV Phùng Xá","m":[{"g":"FS","s":"HĐ tư vấn","d":"2026-03-15"},{"g":"FS","s":"Lập","d":"2026-04-29"},{"g":"FS","s":"Phê duyệt","d":"2026-05-29"},{"g":"BVTC","s":"Lập","d":"2026-06-28"},{"g":"BVTC","s":"Phê duyệt","d":"2026-07-28"},{"g":"KHLCNT","s":"Lập","d":"2026-07-28"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-07-29"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-07-31"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-08-01"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-08-04"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-08-06"},{"g":"E-HSMT","s":"Lập","d":"2026-08-11"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-08-14"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-08-16"},{"g":"E-HSMT","s":"Phát hành","d":"2026-08-16"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-09-03"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-09-18"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-09-23"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-09-28"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-10-01"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-10-08"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-03-07"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-10-18"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-04-26"}]},{"n":"Lắp MBA T2 trạm 110kV Thạch Thất 2","m":[{"g":"FS","s":"HĐ tư vấn","d":"2026-02-13"},{"g":"FS","s":"Lập","d":"2026-03-30"},{"g":"FS","s":"Phê duyệt","d":"2026-04-14"},{"g":"KHLCNT","s":"Lập","d":"2026-04-29"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-04-30"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-05-02"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-05-03"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-05-06"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-05-08"},{"g":"E-HSMT","s":"Lập","d":"2026-05-13"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-05-16"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-05-18"},{"g":"E-HSMT","s":"Phát hành","d":"2026-05-18"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-06-02"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-06-17"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-06-22"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-06-27"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-06-30"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-07-07"},{"g":"Hợp đồng","s":"NT VTTB","d":"2026-08-06"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-08-16"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2026-09-15"}]},{"n":"Nâng công suất T3 TBA 110kV Vân Đình","m":[{"g":"FS","s":"HĐ tư vấn","d":"2026-02-13"},{"g":"FS","s":"Lập","d":"2026-03-30"},{"g":"FS","s":"Phê duyệt","d":"2026-04-14"},{"g":"KHLCNT","s":"Lập","d":"2026-04-29"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-04-30"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-05-02"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-05-03"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-05-06"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-05-08"},{"g":"E-HSMT","s":"Lập","d":"2026-05-13"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-05-16"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-05-18"},{"g":"E-HSMT","s":"Phát hành","d":"2026-05-18"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-06-02"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-06-17"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-06-22"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-06-27"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-06-30"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-07-07"},{"g":"Hợp đồng","s":"NT VTTB","d":"2026-08-06"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-08-16"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2026-09-15"}]},{"n":"Nâng công suất T1 TBA 110kV Phú Nghĩa","m":[{"g":"FS","s":"Phê duyệt","d":"2026-04-14"},{"g":"KHLCNT","s":"Lập","d":"2026-05-14"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-05-15"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-05-17"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-05-18"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-05-21"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-05-23"},{"g":"E-HSMT","s":"Lập","d":"2026-05-28"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-05-31"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-06-02"},{"g":"E-HSMT","s":"Phát hành","d":"2026-06-02"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-06-17"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-07-02"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-07-07"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-07-12"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-07-15"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-07-22"},{"g":"Hợp đồng","s":"NT VTTB","d":"2026-11-19"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-11-29"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2026-12-29"}]},{"n":"Lắp MBA T2 trạm 110kV Hồng Dương","m":[{"g":"FS","s":"HĐ tư vấn","d":"2026-03-15"},{"g":"FS","s":"Lập","d":"2026-04-29"},{"g":"FS","s":"Phê duyệt","d":"2026-05-29"},{"g":"BVTC","s":"Lập","d":"2026-06-28"},{"g":"BVTC","s":"Phê duyệt","d":"2026-07-28"},{"g":"KHLCNT","s":"Lập","d":"2026-07-28"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-07-29"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-07-31"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-08-01"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-08-04"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-08-06"},{"g":"E-HSMT","s":"Lập","d":"2026-08-11"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-08-14"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-08-16"},{"g":"E-HSMT","s":"Phát hành","d":"2026-08-16"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-09-03"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-09-18"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-09-23"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-09-28"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-10-01"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-10-08"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-03-07"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-10-18"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-04-26"}]},{"n":"Lắp MBA T2 trạm 110kV Mỹ Đức","m":[{"g":"FS","s":"HĐ tư vấn","d":"2026-03-15"},{"g":"FS","s":"Lập","d":"2026-04-29"},{"g":"FS","s":"Phê duyệt","d":"2026-05-29"},{"g":"BVTC","s":"Lập","d":"2026-06-28"},{"g":"BVTC","s":"Phê duyệt","d":"2026-07-28"},{"g":"KHLCNT","s":"Lập","d":"2026-07-28"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-07-29"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-07-31"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-08-01"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-08-04"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-08-06"},{"g":"E-HSMT","s":"Lập","d":"2026-08-11"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-08-14"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-08-16"},{"g":"E-HSMT","s":"Phát hành","d":"2026-08-16"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-09-03"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-09-18"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-09-23"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-09-28"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-10-01"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-10-08"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-03-07"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-10-18"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-04-26"}]},{"n":"Lắp MBA T2 trạm 110kV Phúc Thọ 2","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-07-08"},{"g":"FS","s":"Phê duyệt","d":"2026-08-22"},{"g":"BVTC","s":"Lập","d":"2026-09-21"},{"g":"BVTC","s":"Phê duyệt","d":"2026-10-21"},{"g":"KHLCNT","s":"Lập","d":"2026-10-21"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-10-22"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-10-24"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-10-25"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-10-28"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-10-30"},{"g":"E-HSMT","s":"Lập","d":"2026-11-04"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-11-07"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-11-09"},{"g":"E-HSMT","s":"Phát hành","d":"2026-11-09"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-11-27"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-12-12"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-12-17"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-12-22"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-12-25"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2027-01-01"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-06-30"},{"g":"Hợp đồng","s":"Khởi công","d":"2027-07-10"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-10-08"}]},{"n":"Lắp bổ sung chống sét van có khe hở ngoài cho tuyến đường dây 110kV 175, 176 T500 Thường Tín - E1.39 Thanh Oai, DDK 181, 182 E1.35 Sơn Tây - E1.53 Ba Vì","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-06-23"},{"g":"FS","s":"Phê duyệt","d":"2026-07-23"},{"g":"KHLCNT","s":"Lập","d":"2026-08-22"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-08-23"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-08-25"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-08-26"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-08-29"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-08-31"},{"g":"E-HSMT","s":"Lập","d":"2026-09-05"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-09-08"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-09-10"},{"g":"E-HSMT","s":"Phát hành","d":"2026-09-10"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-09-25"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-10-10"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-10-15"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-10-20"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-10-23"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-10-30"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-02-27"},{"g":"Hợp đồng","s":"Khởi công","d":"2027-03-09"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-04-08"}]},{"n":"Thí điểm giám sát PD và nhiệt độ online cáp ngầm 110kV: Tuyến cáp ngầm 173, 174 E1.40 Tây Hồ - E1.8 Yên Phụ, E1.18 Bờ Hồ","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-06-23"},{"g":"FS","s":"Phê duyệt","d":"2026-07-23"},{"g":"KHLCNT","s":"Lập","d":"2026-08-22"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-08-23"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-08-25"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-08-26"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-08-29"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-08-31"},{"g":"E-HSMT","s":"Lập","d":"2026-09-05"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-09-08"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-09-10"},{"g":"E-HSMT","s":"Phát hành","d":"2026-09-10"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-09-25"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-10-10"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-10-15"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-10-20"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-10-23"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-10-30"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-02-27"},{"g":"Hợp đồng","s":"Khởi công","d":"2027-03-09"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-04-08"}]},{"n":"Trang bị hệ thống giám sát nhiệt độ, độ ẩm online cho các TBA khu vực trung tâm Hà Nội.","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-06-23"},{"g":"FS","s":"Phê duyệt","d":"2026-07-23"},{"g":"KHLCNT","s":"Lập","d":"2026-08-22"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-08-23"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-08-25"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-08-26"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-08-29"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-08-31"},{"g":"E-HSMT","s":"Lập","d":"2026-09-05"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-09-08"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-09-10"},{"g":"E-HSMT","s":"Phát hành","d":"2026-09-10"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-09-25"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-10-10"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-10-15"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-10-20"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-10-23"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-10-30"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-02-27"},{"g":"Hợp đồng","s":"Khởi công","d":"2027-03-09"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-06-07"}]},{"n":"Cải tạo hệ thống thanh cái trung thế phục vụ hạ áp lưới 35kV và khai thác tải 22kV TBA E1.1 Đông Anh","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-07-08"},{"g":"FS","s":"Phê duyệt","d":"2026-08-07"},{"g":"KHLCNT","s":"Lập","d":"2026-09-06"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-09-07"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-09-09"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-09-10"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-09-13"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-09-15"},{"g":"E-HSMT","s":"Lập","d":"2026-09-20"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-09-23"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-09-25"},{"g":"E-HSMT","s":"Phát hành","d":"2026-09-25"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-10-10"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-10-25"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-10-30"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-11-04"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-11-07"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-11-14"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-01-13"},{"g":"Hợp đồng","s":"Khởi công","d":"2027-01-23"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-03-24"}]},{"n":"Cải tạo hệ thống thanh cái trung thế phục vụ hạ áp lưới 35kV và khai thác tải 22kV trạm E1.31 Trôi","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-07-08"},{"g":"FS","s":"Phê duyệt","d":"2026-08-07"},{"g":"KHLCNT","s":"Lập","d":"2026-09-06"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-09-07"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-09-09"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-09-10"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-09-13"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-09-15"},{"g":"E-HSMT","s":"Lập","d":"2026-09-20"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-09-23"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-09-25"},{"g":"E-HSMT","s":"Phát hành","d":"2026-09-25"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-10-10"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-10-25"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-10-30"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-11-04"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-11-07"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-11-14"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-01-13"},{"g":"Hợp đồng","s":"Khởi công","d":"2027-01-23"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-03-24"}]},{"n":"Cải tạo hệ thống tiếp địa trạm biến áp 110kV Sơn Tây 2 E1.44, Đông Anh 2 E1.49","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-06-08"},{"g":"FS","s":"Phê duyệt","d":"2026-07-08"},{"g":"KHLCNT","s":"Lập","d":"2026-08-07"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-08-08"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-08-10"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-08-11"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-08-14"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-08-16"},{"g":"E-HSMT","s":"Lập","d":"2026-08-21"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-08-24"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-08-26"},{"g":"E-HSMT","s":"Phát hành","d":"2026-08-26"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-09-10"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-09-25"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-09-30"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-10-05"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-10-08"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-10-15"},{"g":"Hợp đồng","s":"NT VTTB","d":"2026-11-14"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-11-24"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2026-12-24"}]},{"n":"Nâng cao trình khoảng cột 34 - 36; 37 - 39 và 45 - 47 tuyến đường dây 171, 172 E1.6 Chèm - E1.4 Hà Đông","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-07-08"},{"g":"FS","s":"Phê duyệt","d":"2026-08-07"},{"g":"KHLCNT","s":"Lập","d":"2026-09-06"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-09-07"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-09-09"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-09-10"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-09-13"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-09-15"},{"g":"E-HSMT","s":"Lập","d":"2026-09-20"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-09-23"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-09-25"},{"g":"E-HSMT","s":"Phát hành","d":"2026-09-25"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-10-10"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-10-25"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-10-30"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-11-04"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-11-07"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-11-14"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-02-12"},{"g":"Hợp đồng","s":"Khởi công","d":"2027-01-13"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-04-13"}]},{"n":"Xử lý chống úng ngập và cải tạo kiến trúc TBA 220kV E1.40 Tây Hồ","m":[{"g":"FS","s":"Phê duyệt","d":"2026-04-01"},{"g":"KHLCNT","s":"Lập","d":"2026-05-01"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-05-02"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-05-04"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-05-05"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-05-08"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-05-10"},{"g":"E-HSMT","s":"Lập","d":"2026-05-15"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-05-18"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-05-20"},{"g":"E-HSMT","s":"Phát hành","d":"2026-05-20"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-06-04"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-06-19"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-06-24"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-06-29"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-07-02"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-07-09"},{"g":"Hợp đồng","s":"Khởi công","d":"2026-07-24"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2026-11-26"}]},{"n":"Trang bị thí điểm thiết bị giám sát chất lượng điện năng tại thanh cái 22kV trạm CNC Hòa Lạc và một số vị tri trên đường dây (TBA) trong CNC Hòa Lạc - TP Hà Nội","m":[{"g":"FS","s":"NVKT","d":"2026-03-10"},{"g":"FS","s":"HĐ tư vấn","d":"2026-05-09"},{"g":"FS","s":"Lập","d":"2026-06-08"},{"g":"FS","s":"Phê duyệt","d":"2026-06-08"},{"g":"KHLCNT","s":"Lập","d":"2026-07-08"},{"g":"KHLCNT","s":"Thẩm định","d":"2026-07-09"},{"g":"KHLCNT","s":"Phê duyệt","d":"2026-07-11"},{"g":"Dự toán gói thầu","s":"Lập","d":"2026-07-12"},{"g":"Dự toán gói thầu","s":"Thẩm định","d":"2026-07-15"},{"g":"Dự toán gói thầu","s":"Phê duyệt","d":"2026-07-17"},{"g":"E-HSMT","s":"Lập","d":"2026-07-22"},{"g":"E-HSMT","s":"Thẩm định","d":"2026-07-25"},{"g":"E-HSMT","s":"Phê duyệt","d":"2026-07-27"},{"g":"E-HSMT","s":"Phát hành","d":"2026-07-27"},{"g":"E-HSMT","s":"Mở thầu","d":"2026-08-11"},{"g":"E-HSMT","s":"Đánh giá","d":"2026-08-26"},{"g":"KQLCNT","s":"Đối chiếu/ Thương thảo","d":"2026-08-31"},{"g":"KQLCNT","s":"Thẩm định","d":"2026-09-05"},{"g":"KQLCNT","s":"Phê duyệt KQLCNT","d":"2026-09-08"},{"g":"Hợp đồng","s":"Ký Hợp đồng","d":"2026-09-15"},{"g":"Hợp đồng","s":"NT VTTB","d":"2027-01-13"},{"g":"Hợp đồng","s":"Khởi công","d":"2027-01-23"},{"g":"Hợp đồng","s":"Hoàn thành","d":"2027-02-12"}]}];
+// Dữ liệu được load động từ Supabase (bảng gantt_milestones)
+let GANTT_DATA = []; // Populated by loadGanttFromSupabase()
 
 const PHASE_COLORS = {
   'FS':                { bg:'rgba(167,139,250,.15)', border:'rgba(167,139,250,.4)', text:'#c4b5fd', dot:'#c4b5fd' },
@@ -2729,7 +3060,10 @@ function switchTab(name,btn){
   document.getElementById('tab-'+name).classList.add('active');
   btn.classList.add('active');
   if(name==='gantt') renderGantt();
+  if(name==='gantt_scl') loadGanttSclFromSupabase().then(()=>renderGanttScl());
   if(name==='log') loadLog();
+  if(name==='scl') loadSCL();
+  if(name==='sctx') loadSCTX();
 }
 function switchMTab(id,btn){
   ['dtInfo','dtLog','dtDocs'].forEach(n=>document.getElementById(n).style.display='none');
@@ -3220,8 +3554,1861 @@ function gotoGanttPhase(projName, gdIdx, phase, event){
 
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeKpiPopup(); closeDocViewer(); } });
 
+// ════════════════════════════════════════════════════════════════════
+// ║  DỰ ÁN SCL – SỬA CHỮA LỚN
+// ║  Supabase table: scl_projects
+// ║  SQL tạo bảng (chạy 1 lần trong Supabase SQL Editor):
+// ║
+// ║  CREATE TABLE scl_projects (
+// ║    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+// ║    stt INTEGER,
+// ║    ten_cong_trinh TEXT NOT NULL,
+// ║    nguon_von TEXT DEFAULT 'SCL',
+// ║    trang_thai TEXT,  -- CHUYEN_TIEP | GIAO_KHCP | THONG_QUA | TRINH_DM
+// ║    tien_do TEXT,
+// ║    vuong_mac TEXT,
+// ║    is_cham_tien_do BOOLEAN DEFAULT FALSE,
+// ║    phu_trach TEXT,
+// ║    phoi_hop TEXT,
+// ║    created_at TIMESTAMPTZ DEFAULT NOW(),
+// ║    updated_at TIMESTAMPTZ DEFAULT NOW()
+// ║  );
+// ║  ALTER TABLE scl_projects ENABLE ROW LEVEL SECURITY;
+// ║  CREATE POLICY "Allow all for authenticated" ON scl_projects
+// ║    FOR ALL TO authenticated USING (true) WITH CHECK (true);
+// ════════════════════════════════════════════════════════════════════
+
+const SCL_ST = {
+  CHUYEN_TIEP: { label:'Chuyển tiếp', cls:'bp2p8',  color:'#00c2ff' },
+  GIAO_KHCP:   { label:'Giao KHCP',   cls:'bdtms',  color:'#8aa8ff' },
+  THONG_QUA:   { label:'Thông qua',   cls:'bdtxd',  color:'#00e5b0' },
+  TRINH_DM:    { label:'Trình DM',    cls:'brev',   color:'#ff8050' },
+};
+
+let allSCL = [], filteredSCL = [];
+
+// ─── LOAD SCL DATA FROM SUPABASE ──────────────────────────────────
+async function loadSCL(){
+  try{
+    const { data, error } = await db.from('scl_projects').select('*').order('trang_thai').order('stt');
+    if(error) throw error;
+    if(!data || data.length === 0){
+      toast('📋 Bảng scl_projects đang trống. Hãy dùng import_tool.html để nhập dữ liệu từ 123.csv.','warn');
+    }
+    allSCL = data || [];
+    filteredSCL = [...allSCL];
+    renderSCLTable(allSCL);
+    populateSCLCVFilter(allSCL);
+    populateSCLProjSel(allSCL);
+  } catch(e){
+    console.warn('loadSCL error:', e.message);
+    toast('❌ Lỗi tải dữ liệu SCL: '+e.message,'err');
+    allSCL = []; filteredSCL = [];
+    renderSCLTable([]);
+  }
+}
+
+// ─── RENDER SCL TABLE ──────────────────────────────────────────────
+function renderSCLTable(data){
+  const tb = document.getElementById('sclBody');
+  document.getElementById('sclTableCount').textContent = data.length + ' công trình';
+  if(!data.length){
+    tb.innerHTML = '<tr><td colspan="9" class="empty-state">Không có dữ liệu phù hợp</td></tr>';
+    return;
+  }
+  const isLD = (currentUser?.email||'').includes('lanh_dao');
+  let counter = {};
+  tb.innerHTML = data.map((p,i) => {
+    const st = SCL_ST[p.trang_thai];
+
+    const editBtn = isLD
+      ? `<button class="ra" style="font-size:10px;padding:2px 6px;margin-left:4px;opacity:.6" onclick="openSCLEditStaff('${p.id}')" title="Sửa phụ trách & phối hợp">🖊</button>`
+      : '';
+    return `<tr class="${p.is_cham_tien_do?'rl':''}" style="animation:fadeUp .3s ease ${(i%15)*.025}s both">
+      <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${p.stt??i+1}</td>
+      <td class="td-name">${p.ten_cong_trinh}</td>
+      <td>${st?`<span class="badge ${st.cls}">${st.label}</span>`:p.trang_thai??'–'}</td>
+      <td class="td-prog">${p.tien_do
+        ? `<div style="line-height:1.5;color:var(--text)">${p.tien_do}</div>${p.updated_at?`<div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)">🕐 ${new Date(p.updated_at).toLocaleDateString('vi-VN')}</div>`:''}`
+        : '<span style="color:rgba(255,255,255,.25);font-style:italic;font-size:11px">Chưa cập nhật</span>'
+      }</td>
+      <td style="max-width:180px">
+        ${p.vuong_mac?`<div style="color:var(--warn);font-size:11px;line-height:1.5">${p.vuong_mac}</div>`:'<span style="color:rgba(255,255,255,.15)">—</span>'}
+        ${p.is_cham_tien_do?'<div style="font-size:11px;color:var(--danger);margin-top:2px">🚨 Chậm tiến độ</div>':''}
+      </td>
+      <td style="font-size:11px;color:var(--text)">
+        <div style="display:flex;align-items:flex-start;gap:2px">
+          <div>${p.phu_trach?`<div style="font-weight:500;line-height:1.5">${p.phu_trach}</div>`:'<span style="color:rgba(255,255,255,.25);font-style:italic">Chưa có</span>'}</div>
+          ${editBtn}
+        </div>
+      </td>
+      <td style="font-size:11px;color:var(--muted)">
+        <div style="display:flex;align-items:flex-start;gap:2px">
+          <div>${p.phoi_hop?`<div style="line-height:1.5">${p.phoi_hop}</div>`:'<span style="color:rgba(255,255,255,.15)">—</span>'}</div>
+          ${editBtn}
+        </div>
+      </td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="ra" onclick="openSCLDetail('${p.id}')">📁</button>
+        <button class="ra" onclick="openSCLProgressModal('${p.id}')">✏️</button>
+        <button class="ra rf" onclick="openSCLFlagModal('${p.id}')">🚩</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── SCL FILTER ───────────────────────────────────────────────────
+function applySCLFilter(){
+  const s = document.getElementById('sclStatus').value;
+  const g = document.getElementById('sclFlag').value;
+  const q = document.getElementById('sclSearch').value.toLowerCase();
+  const cv = document.getElementById('sclCV').value.toLowerCase();
+  filteredSCL = allSCL.filter(p => {
+    if(s && p.trang_thai !== s) return false;
+    if(g === 'vuong_mac' && !p.vuong_mac) return false;
+    if(g === 'cham' && !p.is_cham_tien_do) return false;
+    if(q && !p.ten_cong_trinh.toLowerCase().includes(q)) return false;
+    if(cv && !(p.phu_trach||'').toLowerCase().includes(cv)) return false;
+    return true;
+  });
+  renderSCLTable(filteredSCL);
+}
+function resetSCLFilter(){
+  ['sclStatus','sclFlag','sclCV'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('sclSearch').value = '';
+  filteredSCL = [...allSCL]; renderSCLTable(filteredSCL);
+}
+
+// ─── SCL SELECT POPULATION ────────────────────────────────────────
+function populateSCLCVFilter(data){
+  const sel = document.getElementById('sclCV'); if(!sel) return;
+  const names = new Set();
+  data.forEach(p => { if(p.phu_trach) p.phu_trach.split('/').forEach(n=>{ const t=n.trim(); if(t) names.add(t); }); });
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Tất cả</option>';
+  [...names].sort().forEach(n => {
+    const opt = document.createElement('option'); opt.value = n; opt.textContent = n;
+    if(n === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function populateSCLProjSel(data){
+  const sel = document.getElementById('scl_p2Proj'); if(!sel) return;
+  sel.innerHTML = '<option value="">– Chọn công trình –</option>';
+  data.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.stt ? p.stt+'. ' : '') + p.ten_cong_trinh.substring(0, 80) + (p.ten_cong_trinh.length > 80 ? '…' : '');
+    sel.appendChild(opt);
+  });
+}
+
+// ─── SCL EXPORT EXCEL ─────────────────────────────────────────────
+function exportSCLExcel(){
+  const src = filteredSCL.length ? filteredSCL : allSCL;
+  if(!src.length){ toast('Không có dữ liệu để xuất','warn'); return; }
+  const rows = src.map(p=>({
+    'STT': p.stt,
+    'Tên công trình': p.ten_cong_trinh,
+    'Nguồn vốn': p.nguon_von || 'SCL',
+    'Trạng thái': SCL_ST[p.trang_thai]?.label || p.trang_thai,
+    'Tiến độ thực hiện': p.tien_do,
+    'Vướng mắc': p.vuong_mac,
+    'Chậm tiến độ': p.is_cham_tien_do ? 'Có' : 'Không',
+    'Phụ trách': p.phu_trach,
+    'Phối hợp': p.phoi_hop,
+    'Cập nhật': p.updated_at ? new Date(p.updated_at).toLocaleString('vi-VN') : '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [6,70,10,14,60,40,12,20,15,22].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'SCL');
+  XLSX.writeFile(wb, `SCL_TienDo_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.xlsx`);
+  toast('📥 Xuất '+rows.length+' dòng SCL thành công','ok');
+}
+
+// ─── SCL PROGRESS MODAL ───────────────────────────────────────────
+function openSCLProgressModal(id=''){
+  const proj = allSCL.find(p => String(p.id) === String(id));
+  document.getElementById('scl_p1Id').value = id;
+  document.getElementById('scl_p1Name').value = proj ? proj.ten_cong_trinh : '';
+  document.getElementById('scl_p1TD').value = '';
+  document.getElementById('scl_p1VM').value = proj ? (proj.vuong_mac||'') : '';
+  document.getElementById('scl_p1Cham').checked = proj ? !!proj.is_cham_tien_do : false;
+  document.getElementById('scl_p1Nguoi').value = '';
+  sclClearFileInput();
+  // Nếu không truyền id → cho phép chọn từ dropdown trong select
+  if(!id && allSCL.length){
+    // Add proj dropdown to modal dynamically
+    const nameInput = document.getElementById('scl_p1Name');
+    // Replace with select
+    if(nameInput.tagName === 'INPUT'){
+      const sel = document.createElement('select');
+      sel.id = 'scl_p1Name'; sel.className = 'fc';
+      sel.onchange = function(){
+        const p = allSCL.find(x => String(x.id) === this.value);
+        document.getElementById('scl_p1Id').value = this.value;
+        if(p){ document.getElementById('scl_p1VM').value = p.vuong_mac||''; document.getElementById('scl_p1Cham').checked = !!p.is_cham_tien_do; }
+      };
+      sel.innerHTML = '<option value="">– Chọn công trình –</option>';
+      allSCL.forEach(p => {
+        const opt = document.createElement('option'); opt.value = p.id;
+        opt.textContent = (p.stt?p.stt+'. ':'')+p.ten_cong_trinh.substring(0,70)+(p.ten_cong_trinh.length>70?'…':'');
+        sel.appendChild(opt);
+      });
+      nameInput.replaceWith(sel);
+    }
+  }
+  openM('mSCLProg');
+}
+
+async function submitSCLProg(){
+  const id = document.getElementById('scl_p1Id').value;
+  const td = document.getElementById('scl_p1TD').value.trim();
+  const vm = document.getElementById('scl_p1VM').value.trim();
+  const cham = document.getElementById('scl_p1Cham').checked;
+  if(!id){ toast('Vui lòng chọn công trình','warn'); return; }
+  if(!td){ toast('Vui lòng nhập nội dung tiến độ','warn'); return; }
+  const nguoiCapNhat = document.getElementById('scl_p1Nguoi').value.trim() || currentUser?.email?.split('@')[0] || 'Người dùng';
+  try{
+    const updates = { tien_do: td, vuong_mac: vm||null, is_cham_tien_do: cham, updated_at: new Date().toISOString() };
+    const { error } = await db.from('scl_projects').update(updates).eq('id', id);
+    if(error) throw error;
+    await db.from('progress_logs_scl').insert({
+      project_id: id,
+      noi_dung_tien_do: td,
+      nguoi_cap_nhat: nguoiCapNhat,
+      ngay_cap_nhat: new Date().toISOString()
+    });
+    toast('✅ Đã cập nhật tiến độ SCL','ok');
+    // Upload file nếu có
+    if(selectedSCLFile){
+      try{
+        toast('⏫ Đang upload tài liệu…','ok');
+        const { path, publicUrl, ext } = await uploadSCLFileToStorage(selectedSCLFile, id);
+        const desc = document.getElementById('scl_p1DocDesc').value.trim();
+        await db.from('document').insert({
+          project_id:   id,
+          ten_tai_lieu: desc || selectedSCLFile.name.replace(/\.[^.]+$/,''),
+          ten_file:     selectedSCLFile.name,
+          loai_file:    ext,
+          storage_path: path,
+          public_url:   publicUrl,
+          nguoi_upload: nguoiCapNhat,
+          kich_thuoc:   selectedSCLFile.size,
+          mo_ta:        desc||null,
+          ngay_upload:  new Date().toISOString()
+        });
+        toast('📎 Đã đính kèm tài liệu thành công!','ok');
+        sclClearFileInput();
+      } catch(uploadErr){
+        toast('⚠️ Tiến độ đã lưu nhưng upload file lỗi: '+uploadErr.message,'warn');
+      }
+    }
+    closeM('mSCLProg');
+    await loadSCL();
+  } catch(e){ toast('❌ Lỗi: '+e.message,'err'); }
+}
+
+// ─── SCL FLAG MODAL ───────────────────────────────────────────────
+function openSCLFlagModal(id=''){
+  const sel = document.getElementById('scl_p2Proj');
+  if(id) sel.value = id;
+  document.getElementById('scl_p2FT').value = '';
+  document.getElementById('scl_p2MT').value = '';
+  document.getElementById('scl_p2Nguoi').value = currentUser?.email?.split('@')[0]||'';
+  document.getElementById('sclGMoTa').style.display = 'block';
+  document.getElementById('sclGTS').style.display = 'none';
+  openM('mSCLFlag');
+}
+function onSCLFlagChg(){
+  const v = document.getElementById('scl_p2FT').value;
+  document.getElementById('sclGTS').style.display = v==='THAY_DOI_TRANG_THAI' ? 'block' : 'none';
+  document.getElementById('sclGMoTa').style.display = v==='CLEAR_VUONG_MAC'||v==='BINH_THUONG' ? 'none' : 'block';
+}
+async function submitSCLFlag(){
+  const id = document.getElementById('scl_p2Proj').value;
+  const ft = document.getElementById('scl_p2FT').value;
+  if(!id){ toast('Vui lòng chọn công trình','warn'); return; }
+  if(!ft){ toast('Vui lòng chọn loại cập nhật','warn'); return; }
+  const mt = document.getElementById('scl_p2MT').value.trim();
+  try{
+    let updates = { updated_at: new Date().toISOString() };
+    if(ft==='VUONG_MAC')            { updates.vuong_mac = mt||'Có vướng mắc'; }
+    else if(ft==='CLEAR_VUONG_MAC') { updates.vuong_mac = null; }
+    else if(ft==='CHAM_TIEN_DO')    { updates.is_cham_tien_do = true; updates.vuong_mac = mt||null; }
+    else if(ft==='BINH_THUONG')     { updates.is_cham_tien_do = false; updates.vuong_mac = null; }
+    else if(ft==='THAY_DOI_TRANG_THAI'){ updates.trang_thai = document.getElementById('scl_p2TS').value; }
+    const { error } = await db.from('scl_projects').update(updates).eq('id', id);
+    if(error) throw error;
+    toast('✅ Đã cập nhật flag SCL','ok');
+    closeM('mSCLFlag');
+    await loadSCL();
+  } catch(e){ toast('❌ Lỗi: '+e.message,'err'); }
+}
+
+// ─── SCL EDIT STAFF (lanh_dao only) ──────────────────────────────
+// ─── SCL EDIT STAFF MODAL ────────────────────────────────────────
+let sclEsId = null;
+function openSCLEditStaff(id){
+  const p = allSCL.find(x => String(x.id)===String(id)); if(!p) return;
+  sclEsId = id;
+  document.getElementById('sclEsTitle').textContent = `${p.stt??''}. ${p.ten_cong_trinh}`;
+  document.getElementById('sclEsPT').value  = p.phu_trach  || '';
+  document.getElementById('sclEsPH').value  = p.phoi_hop   || '';
+  openM('mSCLEditStaff');
+}
+async function submitSCLEditStaff(){
+  if(!sclEsId) return;
+  const pt = document.getElementById('sclEsPT').value.trim();
+  const ph = document.getElementById('sclEsPH').value.trim();
+  try{
+    const { error } = await db.from('scl_projects').update({
+      phu_trach: pt||null, phoi_hop: ph||null, updated_at: new Date().toISOString()
+    }).eq('id', sclEsId);
+    if(error) throw error;
+    const idx = allSCL.findIndex(x=>String(x.id)===String(sclEsId));
+    if(idx>=0){ allSCL[idx].phu_trach=pt||null; allSCL[idx].phoi_hop=ph||null; }
+    const fi = filteredSCL.findIndex(x=>String(x.id)===String(sclEsId));
+    if(fi>=0){ filteredSCL[fi].phu_trach=pt||null; filteredSCL[fi].phoi_hop=ph||null; }
+    renderSCLTable(filteredSCL.length ? filteredSCL : allSCL);
+    populateSCLCVFilter(allSCL);
+    toast('✅ Cập nhật phụ trách & phối hợp SCL thành công!','ok');
+    closeM('mSCLEditStaff');
+  } catch(e){ toast('❌ Lỗi: '+e.message,'err'); }
+}
+// ─── SCL CREATE PROJECT ──────────────────────────────────────────
+function openSCLNewProject(){
+  ['scl_np_ten','scl_np_tiendo','scl_np_vm','scl_np_pt','scl_np_ph'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('scl_np_tt').value='TRINH_DM';
+  document.getElementById('scl_np_cham').checked=false;
+  openM('mSCLNewProj');
+}
+
+async function submitSCLNewProject(){
+  const ten   = document.getElementById('scl_np_ten').value.trim();
+  const tt    = document.getElementById('scl_np_tt').value;
+  const td    = document.getElementById('scl_np_tiendo').value.trim();
+  const vm    = document.getElementById('scl_np_vm').value.trim();
+  const pt    = document.getElementById('scl_np_pt').value.trim();
+  const ph    = document.getElementById('scl_np_ph').value.trim();
+  const cham  = document.getElementById('scl_np_cham').checked;
+
+  if(!ten){ toast('Vui lòng nhập tên công trình SCL','warn'); return; }
+
+  // Tính số thứ tự mới
+  const sameStatus = allSCL.filter(p=>p.trang_thai===tt);
+  const nextStt = sameStatus.length ? Math.max(...sameStatus.map(p=>p.stt||0))+1 : 1;
+
+  const newProj = {
+    stt:            nextStt,
+    ten_cong_trinh: ten,
+    nguon_von:      'SCL',
+    trang_thai:     tt,
+    tien_do:        td || null,
+    vuong_mac:      vm || null,
+    phu_trach:      pt || null,
+    phoi_hop:       ph || null,
+    is_cham_tien_do: cham,
+    created_at:     new Date().toISOString(),
+    updated_at:     new Date().toISOString(),
+  };
+
+  try{
+    const { error } = await db.from('scl_projects').insert(newProj);
+    if(error) throw error;
+    toast('✅ Đã tạo công trình SCL mới thành công!','ok');
+    closeM('mSCLNewProj');
+    await loadSCL(); 
+  } catch(e){
+    toast('❌ Lỗi tạo dự án SCL: '+e.message,'err');
+  }
+}
+
+// ─── SCL DETAIL ──────────────────────────────────────────────────
+let curSCLDetailId = null;
+
+function openSCLDetail(id){
+  curSCLDetailId = id;
+  const p = allSCL.find(x => String(x.id) === String(id)); 
+  if(!p) return;
+  
+  const st = SCL_ST[p.trang_thai];
+  document.getElementById('sclDetailTitle').textContent = p.ten_cong_trinh.substring(0,55) + (p.ten_cong_trinh.length>55?'…':'');
+  
+  document.getElementById('sclDetailMeta').innerHTML = `
+    <div class="ii"><label>Nguồn vốn</label><div class="val"><span class="badge" style="background:rgba(100,180,255,.15);color:#64b4ff;border:1px solid rgba(100,180,255,.3)">SCL</span></div></div>
+    <div class="ii"><label>Trạng thái</label><div class="val">${st?`<span class="badge ${st.cls}">${st.label}</span>`:p.trang_thai||'–'}</div></div>
+    <div class="ii"><label>Phụ trách</label><div class="val">${p.phu_trach||'–'}</div></div>
+    <div class="ii"><label>Phối hợp</label><div class="val">${p.phoi_hop||'–'}</div></div>
+    <div class="ii"><label>Chậm tiến độ</label><div class="val">${p.is_cham_tien_do?'<span style="color:var(--danger);font-weight:700">🚨 Có</span>':'<span style="color:var(--ok)">✅ Không</span>'}</div></div>
+    <div class="ii"><label>Cập nhật lần cuối</label><div class="val" style="font-size:11px;font-family:var(--mono)">${p.updated_at?new Date(p.updated_at).toLocaleString('vi-VN'):'–'}</div></div>`;
+    
+  document.getElementById('sclDetailProg').textContent = p.tien_do || 'Chưa có thông tin tiến độ';
+  
+  document.getElementById('sclDetailVM').innerHTML = p.vuong_mac ?
+    `<label class="fl" style="color:var(--warn)">⚠️ Vướng mắc</label>
+     <div style="font-size:12px;color:var(--warn);background:rgba(255,179,71,.08);padding:10px 12px;border-radius:7px;border:1px solid rgba(255,179,71,.2);line-height:1.6">${p.vuong_mac}</div>` : '';
+     
+  openM('mSCLDetail');
+  
+  // Tự động chuyển về tab Thông tin và load lịch sử
+  const firstTab = document.querySelector('#mSCLDetail .mtab');
+  if(firstTab) switchSCLTab('sclDtInfo', firstTab);
+  loadSCLProjLog(id);
+  loadSCLProjDocs(id);
+}
+// ─── SCL PROJECT LOGS ────────────────────────────────────────────
+function switchSCLTab(id, btn) {
+  ['sclDtInfo', 'sclDtLog', 'sclDtDocs'].forEach(n => {
+    const el = document.getElementById(n);
+    if(el) el.style.display = 'none';
+  });
+  const mtabs = btn.closest('.mtabs').querySelectorAll('.mtab');
+  mtabs.forEach(el => el.classList.remove('active'));
+  document.getElementById(id).style.display = 'block';
+  if(btn) btn.classList.add('active');
+}
+
+async function loadSCLProjLog(id) {
+  const el = document.getElementById('sclProjLog');
+  if(!el) return;
+  el.innerHTML = '<div class="empty-state"><div class="sp"></div></div>';
+  
+  try {
+    const { data, error } = await db.from('progress_logs_scl')
+      .select('*')
+      .eq('project_id', id)
+      .order('ngay_cap_nhat', { ascending: false })
+      .limit(30);
+
+    if (error || !data || !data.length) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:16px;text-align:center">Chưa có lịch sử cập nhật nào</div>';
+      return;
+    }
+
+    el.innerHTML = data.map(l => `
+      <div class="pli">
+        <div class="pli-dot"></div>
+        <div class="pli-body">
+          <div class="pli-text">${l.noi_dung_tien_do}</div>
+          <div class="pli-meta">
+            <span>👤 ${l.nguoi_cap_nhat || 'Hệ thống'}</span>
+            <span>🕐 ${new Date(l.ngay_cap_nhat).toLocaleString('vi-VN')}</span>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="empty-state">Lỗi tải dữ liệu: ${e.message}</div>`;
+  }
+}
+
+
+// ─── SCL FILE UPLOAD HELPERS ──────────────────────────────────────
+let selectedSCLFile = null;
+
+function sclHandleFileSelect(e){ sclSetFile(e.target.files[0]); }
+function sclHandleFileDrop(e){ sclSetFile(e.dataTransfer.files[0]); }
+
+function sclSetFile(file){
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(!['pdf','doc','docx'].includes(ext)){ toast('Chỉ hỗ trợ PDF, DOC, DOCX','warn'); return; }
+  if(file.size > MAX_FILE_MB*1024*1024){ toast('File quá lớn (tối đa '+MAX_FILE_MB+'MB)','warn'); return; }
+  selectedSCLFile = file;
+  document.getElementById('sclFpIcon').textContent  = ext==='pdf'?'📕':'📘';
+  document.getElementById('sclFpName').textContent  = file.name;
+  document.getElementById('sclFpSize').textContent  = formatBytes(file.size);
+  document.getElementById('sclFilePreview').style.display = 'flex';
+  document.getElementById('sclUploadZone').style.display  = 'none';
+}
+
+function sclClearFileInput(){
+  selectedSCLFile = null;
+  document.getElementById('sclFileInput').value = '';
+  document.getElementById('sclFilePreview').style.display = 'none';
+  document.getElementById('sclUploadZone').style.display  = 'block';
+  document.getElementById('scl_p1DocDesc').value = '';
+}
+
+async function uploadSCLFileToStorage(file, projectId){
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const ts   = Date.now();
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const storagePath = `${projectId}/${ts}_${safe}`;
+  const bar  = document.getElementById('sclUploadBar');
+  const barW = document.getElementById('sclUploadProgressBar');
+  barW.style.display = 'block'; bar.style.width = '15%';
+  const { data: sessionData } = await db.auth.getSession();
+  const token = sessionData?.session?.access_token || SUPABASE_KEY;
+  const mimeType = ext==='pdf'?'application/pdf':ext==='docx'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/msword';
+  const uploadUrl = `${SUPABASE_URL}/storage/v1/object/document/${storagePath}`;
+  bar.style.width = '30%';
+  const uploadResp = await fetch(uploadUrl, {
+    method:'POST',
+    headers:{ 'Authorization':`Bearer ${token}`, 'apikey':SUPABASE_KEY, 'Content-Type':mimeType, 'x-upsert':'false', 'Cache-Control':'3600' },
+    body: file
+  });
+  bar.style.width = '80%';
+  if(!uploadResp.ok){
+    let errMsg=`HTTP ${uploadResp.status}`;
+    try{ const j=await uploadResp.json(); errMsg=j.message||j.error||errMsg; }catch(e){}
+    throw new Error('Upload Storage lỗi: '+errMsg);
+  }
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/document/${storagePath}`;
+  bar.style.width = '100%';
+  return { path: storagePath, publicUrl, ext };
+}
+
+// ─── SCL LOAD PROJECT DOCS ────────────────────────────────────────
+async function loadSCLProjDocs(id){
+  const listEl  = document.getElementById('sclDocList');
+  const countEl = document.getElementById('sclDtDocsCount');
+  if(!listEl) return;
+  listEl.innerHTML = '<div class="empty-state"><div class="sp"></div></div>';
+  const { data, error } = await db.from('document')
+    .select('*').eq('project_id', id)
+    .order('ngay_upload', { ascending: false });
+  if(error){ listEl.innerHTML='<div class="empty-state">Lỗi tải tài liệu</div>'; return; }
+  if(countEl) countEl.textContent = data?.length||0;
+  if(!data||!data.length){ listEl.innerHTML='<div class="empty-state" style="padding:32px">📭 Chưa có tài liệu nào được đính kèm</div>'; return; }
+  listEl.innerHTML = data.map(doc => {
+    const ext  = doc.loai_file||'pdf';
+    const icon = ext==='pdf'?'📕':'📘';
+    const date = doc.ngay_upload ? new Date(doc.ngay_upload).toLocaleString('vi-VN') : '–';
+    const size = doc.kich_thuoc  ? formatBytes(doc.kich_thuoc) : '';
+    return `<div class="doc-item">
+      <span class="doc-item-icon">${icon}</span>
+      <div class="doc-item-info">
+        <div class="doc-item-name">${doc.ten_tai_lieu||doc.ten_file}</div>
+        <div class="doc-item-meta">
+          <span>📎 ${doc.ten_file}</span>
+          ${size?`<span>💾 ${size}</span>`:''}
+          <span>👤 ${doc.nguoi_upload||'–'}</span>
+          <span>🕐 ${date}</span>
+          ${doc.mo_ta?`<span style="color:var(--text)">📝 ${doc.mo_ta}</span>`:''}
+        </div>
+      </div>
+      <div class="doc-item-actions">
+        <button class="doc-btn" onclick="viewDoc('${doc.public_url}','${doc.ten_tai_lieu||doc.ten_file}','${doc.loai_file}')">👁 Xem</button>
+        <a class="doc-btn" href="${doc.public_url}" target="_blank" download="${doc.ten_file}">⬇ Tải</a>
+        <button class="doc-btn del" onclick="deleteSCLDoc('${doc.id}','${doc.storage_path}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteSCLDoc(docId, storagePath){
+  if(!confirm('Xác nhận xoá tài liệu này?')) return;
+  try{
+    await db.storage.from('document').remove([storagePath]);
+    await db.from('document').delete().eq('id', docId);
+    toast('🗑 Đã xoá tài liệu','ok');
+    const p = allSCL.find(x=>String(x.id)===String(curSCLDetailId));
+    if(p) await loadSCLProjDocs(curSCLDetailId);
+  } catch(e){ toast('❌ Lỗi xoá: '+e.message,'err'); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── DỰ ÁN SCTX ENGINE  (bảng: sctx_projects + progress_logs_sctx)
+// ══════════════════════════════════════════════════════════════════
+
+const SCTX_ST = {
+  P4: { label:'P04 – Triển khai', cls:'bdtms',  color:'#f59e0b' },
+  P2: { label:'P02/P08 – Triển khai', cls:'bdtxd', color:'#60a5fa' },
+};
+
+let allSCTX = [], filteredSCTX = [];
+
+// ─── LOAD DATA ────────────────────────────────────────────────────
+async function loadSCTX(){
+  try{
+    const { data, error } = await db.from('sctx_projects').select('*').order('trang_thai').order('stt');
+    if(error) throw error;
+    if(!data || data.length === 0){
+      toast('📋 Bảng sctx_projects đang trống. Hãy dùng import_tool_sctx.html để nhập dữ liệu.','warn');
+    }
+    allSCTX = data || [];
+    filteredSCTX = [...allSCTX];
+    renderSCTXTable(allSCTX);
+    populateSCTXCVFilter(allSCTX);
+    populateSCTXProjSel(allSCTX);
+  } catch(e){
+    console.warn('loadSCTX error:', e.message);
+    toast('❌ Lỗi tải dữ liệu SCTX: '+e.message,'err');
+    allSCTX = []; filteredSCTX = [];
+    renderSCTXTable([]);
+  }
+}
+
+// ─── RENDER TABLE ─────────────────────────────────────────────────
+function renderSCTXTable(data){
+  const tb = document.getElementById('sctxBody');
+  document.getElementById('sctxTableCount').textContent = data.length + ' công trình';
+  if(!data.length){
+    tb.innerHTML = '<tr><td colspan="8" class="empty-state">Không có dữ liệu phù hợp</td></tr>';
+    return;
+  }
+  const isLD = (currentUser?.email||'').includes('lanh_dao');
+  tb.innerHTML = data.map((p,i) => {
+    const st = SCTX_ST[p.trang_thai];
+    const editBtn = isLD
+      ? `<button class="ra" style="font-size:10px;padding:2px 6px;margin-left:4px;opacity:.6" onclick="openSCTXEditStaff('${p.id}')" title="Sửa phụ trách & phối hợp">🖊</button>`
+      : '';
+    // Badge màu theo nhóm P4/P2
+    const stBadge = st
+      ? `<span class="badge" style="background:${st.color}22;color:${st.color};border:1px solid ${st.color}55;font-weight:700">${st.label}</span>`
+      : `<span style="color:var(--muted)">${p.trang_thai||'–'}</span>`;
+    return `<tr class="${p.is_cham_tien_do?'rl':''}" style="animation:fadeUp .3s ease ${(i%15)*.025}s both">
+      <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${p.stt??i+1}</td>
+      <td class="td-name">${p.ten_cong_trinh}</td>
+      <td>${stBadge}</td>
+      <td class="td-prog">${p.tien_do
+        ? `<div style="line-height:1.5;color:var(--text)">${p.tien_do}</div>${p.updated_at?`<div style="font-size:10px;color:var(--muted);margin-top:3px;font-family:var(--mono)">🕐 ${new Date(p.updated_at).toLocaleDateString('vi-VN')}</div>`:''}`
+        : '<span style="color:rgba(255,255,255,.25);font-style:italic;font-size:11px">Chưa cập nhật</span>'
+      }</td>
+      <td style="max-width:180px">
+        ${p.vuong_mac?`<div style="color:var(--warn);font-size:11px;line-height:1.5">${p.vuong_mac}</div>`:'<span style="color:rgba(255,255,255,.15)">—</span>'}
+        ${p.is_cham_tien_do?'<div style="font-size:11px;color:var(--danger);margin-top:2px">🚨 Chậm tiến độ</div>':''}
+      </td>
+      <td style="font-size:11px;color:var(--text)">
+        <div style="display:flex;align-items:flex-start;gap:2px">
+          <div>${p.phu_trach?`<div style="font-weight:500;line-height:1.5">${p.phu_trach}</div>`:'<span style="color:rgba(255,255,255,.25);font-style:italic">Chưa có</span>'}</div>
+          ${editBtn}
+        </div>
+      </td>
+      <td style="font-size:11px;color:var(--muted)">
+        <div style="display:flex;align-items:flex-start;gap:2px">
+          <div>${p.phoi_hop?`<div style="line-height:1.5">${p.phoi_hop}</div>`:'<span style="color:rgba(255,255,255,.15)">—</span>'}</div>
+          ${editBtn}
+        </div>
+      </td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="ra" onclick="openSCTXDetail('${p.id}')">📁</button>
+        <button class="ra" onclick="openSCTXProgressModal('${p.id}')">✏️</button>
+        <button class="ra rf" onclick="openSCTXFlagModal('${p.id}')">🚩</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── FILTER ───────────────────────────────────────────────────────
+function applySCTXFilter(){
+  const s  = document.getElementById('sctxStatus').value;
+  const g  = document.getElementById('sctxFlag').value;
+  const q  = document.getElementById('sctxSearch').value.toLowerCase();
+  const cv = document.getElementById('sctxCV').value.toLowerCase();
+  filteredSCTX = allSCTX.filter(p => {
+    if(s && p.trang_thai !== s) return false;
+    if(g === 'vuong_mac' && !p.vuong_mac) return false;
+    if(g === 'cham' && !p.is_cham_tien_do) return false;
+    if(q && !p.ten_cong_trinh.toLowerCase().includes(q)) return false;
+    if(cv && !(p.phu_trach||'').toLowerCase().includes(cv)) return false;
+    return true;
+  });
+  renderSCTXTable(filteredSCTX);
+}
+function resetSCTXFilter(){
+  ['sctxStatus','sctxFlag','sctxCV'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('sctxSearch').value = '';
+  filteredSCTX = [...allSCTX]; renderSCTXTable(filteredSCTX);
+}
+
+// ─── POPULATE SELECTS ─────────────────────────────────────────────
+function populateSCTXCVFilter(data){
+  const sel = document.getElementById('sctxCV'); if(!sel) return;
+  const names = new Set();
+  data.forEach(p => { if(p.phu_trach) p.phu_trach.split('/').forEach(n=>{ const t=n.trim(); if(t) names.add(t); }); });
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Tất cả</option>';
+  [...names].sort().forEach(n => {
+    const opt = document.createElement('option'); opt.value = n; opt.textContent = n;
+    if(n === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+function populateSCTXProjSel(data){
+  const sel = document.getElementById('sctx_p2Proj'); if(!sel) return;
+  sel.innerHTML = '<option value="">– Chọn công trình –</option>';
+  data.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = (p.stt ? p.stt+'. ' : '') + p.ten_cong_trinh.substring(0, 80) + (p.ten_cong_trinh.length > 80 ? '…' : '');
+    sel.appendChild(opt);
+  });
+}
+
+// ─── EXPORT EXCEL ─────────────────────────────────────────────────
+function exportSCTXExcel(){
+  const src = filteredSCTX.length ? filteredSCTX : allSCTX;
+  if(!src.length){ toast('Không có dữ liệu để xuất','warn'); return; }
+  const rows = src.map(p=>({
+    'STT': p.stt,
+    'Tên công trình': p.ten_cong_trinh,
+    'Trạng thái': SCTX_ST[p.trang_thai]?.label || p.trang_thai,
+    'Giá trị khái toán (triệu)': p.gia_tri_khai_toan,
+    'Đơn vị đăng ký': p.don_vi_dang_ky,
+    'Tiến độ thực hiện': p.tien_do,
+    'Vướng mắc': p.vuong_mac,
+    'Chậm tiến độ': p.is_cham_tien_do ? 'Có' : 'Không',
+    'Phụ trách': p.phu_trach,
+    'Phối hợp': p.phoi_hop,
+    'Thời gian HT PAKTTCDT': p.thoi_gian_hoan_thanh,
+    'Cập nhật': p.updated_at ? new Date(p.updated_at).toLocaleString('vi-VN') : '',
+  }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [6,70,16,18,14,60,40,12,20,15,18,22].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, 'SCTX');
+  XLSX.writeFile(wb, `SCTX_TienDo_${new Date().toLocaleDateString('vi-VN').replace(/\//g,'-')}.xlsx`);
+  toast('📥 Xuất '+rows.length+' dòng SCTX thành công','ok');
+}
+
+// ─── PROGRESS MODAL ───────────────────────────────────────────────
+function openSCTXProgressModal(id=''){
+  const proj = allSCTX.find(p => String(p.id) === String(id));
+  document.getElementById('sctx_p1Id').value = id;
+  document.getElementById('sctx_p1TD').value = '';
+  document.getElementById('sctx_p1VM').value = proj ? (proj.vuong_mac||'') : '';
+  document.getElementById('sctx_p1Cham').checked = proj ? !!proj.is_cham_tien_do : false;
+  document.getElementById('sctx_p1Nguoi').value = '';
+  sctxClearFileInput();
+
+  const nameInput = document.getElementById('sctx_p1Name');
+  if(!id && allSCTX.length){
+    if(nameInput.tagName === 'INPUT'){
+      const sel = document.createElement('select');
+      sel.id = 'sctx_p1Name'; sel.className = 'fc';
+      sel.onchange = function(){
+        const p = allSCTX.find(x => String(x.id) === this.value);
+        document.getElementById('sctx_p1Id').value = this.value;
+        if(p){ document.getElementById('sctx_p1VM').value = p.vuong_mac||''; document.getElementById('sctx_p1Cham').checked = !!p.is_cham_tien_do; }
+      };
+      sel.innerHTML = '<option value="">– Chọn công trình –</option>';
+      allSCTX.forEach(p => {
+        const opt = document.createElement('option'); opt.value = p.id;
+        opt.textContent = (p.stt?p.stt+'. ':'')+p.ten_cong_trinh.substring(0,70)+(p.ten_cong_trinh.length>70?'…':'');
+        sel.appendChild(opt);
+      });
+      nameInput.replaceWith(sel);
+    }
+  } else {
+    // Reset to input if needed
+    if(nameInput.tagName === 'SELECT'){
+      const inp = document.createElement('input');
+      inp.id = 'sctx_p1Name'; inp.className = 'fc'; inp.readOnly = true;
+      inp.style = 'background:rgba(255,255,255,.05);cursor:default;color:var(--accent);font-weight:600';
+      nameInput.replaceWith(inp);
+    }
+    document.getElementById('sctx_p1Name').value = proj ? proj.ten_cong_trinh : '';
+  }
+  openM('mSCTXProg');
+}
+
+async function submitSCTXProg(){
+  const id = document.getElementById('sctx_p1Id').value;
+  const td = document.getElementById('sctx_p1TD').value.trim();
+  const vm = document.getElementById('sctx_p1VM').value.trim();
+  const cham = document.getElementById('sctx_p1Cham').checked;
+  if(!id){ toast('Vui lòng chọn công trình','warn'); return; }
+  if(!td){ toast('Vui lòng nhập nội dung tiến độ','warn'); return; }
+  const nguoiCapNhat = document.getElementById('sctx_p1Nguoi').value.trim() || currentUser?.email?.split('@')[0] || 'Người dùng';
+  try{
+    const updates = { tien_do: td, vuong_mac: vm||null, is_cham_tien_do: cham, updated_at: new Date().toISOString() };
+    const { error } = await db.from('sctx_projects').update(updates).eq('id', id);
+    if(error) throw error;
+    await db.from('progress_logs_sctx').insert({
+      project_id: id,
+      noi_dung_tien_do: td,
+      nguoi_cap_nhat: nguoiCapNhat,
+      ngay_cap_nhat: new Date().toISOString()
+    });
+    toast('✅ Đã cập nhật tiến độ SCTX','ok');
+    // Upload file nếu có
+    if(selectedSCTXFile){
+      try{
+        toast('⏫ Đang upload tài liệu…','ok');
+        const { path, publicUrl, ext } = await uploadSCTXFileToStorage(selectedSCTXFile, id);
+        const desc = document.getElementById('sctx_p1DocDesc').value.trim();
+        await db.from('document').insert({
+          project_id:   id,
+          ten_tai_lieu: desc || selectedSCTXFile.name.replace(/\.[^.]+$/,''),
+          ten_file:     selectedSCTXFile.name,
+          loai_file:    ext,
+          storage_path: path,
+          public_url:   publicUrl,
+          nguoi_upload: nguoiCapNhat,
+          kich_thuoc:   selectedSCTXFile.size,
+          mo_ta:        desc||null,
+          ngay_upload:  new Date().toISOString()
+        });
+        toast('📎 Đã đính kèm tài liệu thành công!','ok');
+        sctxClearFileInput();
+      } catch(uploadErr){
+        toast('⚠️ Tiến độ đã lưu nhưng upload file lỗi: '+uploadErr.message,'warn');
+      }
+    }
+    closeM('mSCTXProg');
+    await loadSCTX();
+  } catch(e){ toast('❌ Lỗi: '+e.message,'err'); }
+}
+
+// ─── FLAG MODAL ───────────────────────────────────────────────────
+function openSCTXFlagModal(id=''){
+  const sel = document.getElementById('sctx_p2Proj');
+  if(id) sel.value = id;
+  document.getElementById('sctx_p2FT').value = '';
+  document.getElementById('sctx_p2MT').value = '';
+  document.getElementById('sctx_p2Nguoi').value = currentUser?.email?.split('@')[0]||'';
+  document.getElementById('sctxGMoTa').style.display = 'block';
+  document.getElementById('sctxGTS').style.display = 'none';
+  openM('mSCTXFlag');
+}
+function onSCTXFlagChg(){
+  const v = document.getElementById('sctx_p2FT').value;
+  document.getElementById('sctxGTS').style.display = v==='THAY_DOI_TRANG_THAI' ? 'block' : 'none';
+  document.getElementById('sctxGMoTa').style.display = v==='CLEAR_VUONG_MAC'||v==='BINH_THUONG' ? 'none' : 'block';
+}
+async function submitSCTXFlag(){
+  const id = document.getElementById('sctx_p2Proj').value;
+  const ft = document.getElementById('sctx_p2FT').value;
+  if(!id){ toast('Vui lòng chọn công trình','warn'); return; }
+  if(!ft){ toast('Vui lòng chọn loại cập nhật','warn'); return; }
+  const mt = document.getElementById('sctx_p2MT').value.trim();
+  try{
+    let updates = { updated_at: new Date().toISOString() };
+    if(ft==='VUONG_MAC')            { updates.vuong_mac = mt||'Có vướng mắc'; }
+    else if(ft==='CLEAR_VUONG_MAC') { updates.vuong_mac = null; }
+    else if(ft==='CHAM_TIEN_DO')    { updates.is_cham_tien_do = true; updates.vuong_mac = mt||null; }
+    else if(ft==='BINH_THUONG')     { updates.is_cham_tien_do = false; updates.vuong_mac = null; }
+    else if(ft==='THAY_DOI_TRANG_THAI'){ updates.trang_thai = document.getElementById('sctx_p2TS').value; }
+    const { error } = await db.from('sctx_projects').update(updates).eq('id', id);
+    if(error) throw error;
+    toast('✅ Đã cập nhật flag SCTX','ok');
+    closeM('mSCTXFlag');
+    await loadSCTX();
+  } catch(e){ toast('❌ Lỗi: '+e.message,'err'); }
+}
+
+// ─── EDIT STAFF (lãnh đạo only) ───────────────────────────────────
+// ─── SCTX EDIT STAFF MODAL ───────────────────────────────────────
+let sctxEsId = null;
+function openSCTXEditStaff(id){
+  const p = allSCTX.find(x => String(x.id)===String(id)); if(!p) return;
+  sctxEsId = id;
+  document.getElementById('sctxEsTitle').textContent = `${p.stt??''}. ${p.ten_cong_trinh}`;
+  document.getElementById('sctxEsPT').value = p.phu_trach || '';
+  document.getElementById('sctxEsPH').value = p.phoi_hop  || '';
+  openM('mSCTXEditStaff');
+}
+async function submitSCTXEditStaff(){
+  if(!sctxEsId) return;
+  const pt = document.getElementById('sctxEsPT').value.trim();
+  const ph = document.getElementById('sctxEsPH').value.trim();
+  try{
+    const { error } = await db.from('sctx_projects').update({
+      phu_trach: pt||null, phoi_hop: ph||null, updated_at: new Date().toISOString()
+    }).eq('id', sctxEsId);
+    if(error) throw error;
+    const idx = allSCTX.findIndex(x=>String(x.id)===String(sctxEsId));
+    if(idx>=0){ allSCTX[idx].phu_trach=pt||null; allSCTX[idx].phoi_hop=ph||null; }
+    const fi = filteredSCTX.findIndex(x=>String(x.id)===String(sctxEsId));
+    if(fi>=0){ filteredSCTX[fi].phu_trach=pt||null; filteredSCTX[fi].phoi_hop=ph||null; }
+    renderSCTXTable(filteredSCTX.length ? filteredSCTX : allSCTX);
+    populateSCTXCVFilter(allSCTX);
+    toast('✅ Cập nhật phụ trách & phối hợp SCTX thành công!','ok');
+    closeM('mSCTXEditStaff');
+  } catch(e){ toast('❌ Lỗi: '+e.message,'err'); }
+}
+
+
+// ─── SCTX FILE UPLOAD HELPERS ─────────────────────────────────────
+let selectedSCTXFile = null;
+
+function sctxHandleFileSelect(e){ sctxSetFile(e.target.files[0]); }
+function sctxHandleFileDrop(e){ sctxSetFile(e.dataTransfer.files[0]); }
+
+function sctxSetFile(file){
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if(!['pdf','doc','docx'].includes(ext)){ toast('Chỉ hỗ trợ PDF, DOC, DOCX','warn'); return; }
+  if(file.size > MAX_FILE_MB*1024*1024){ toast('File quá lớn (tối đa '+MAX_FILE_MB+'MB)','warn'); return; }
+  selectedSCTXFile = file;
+  document.getElementById('sctxFpIcon').textContent  = ext==='pdf'?'📕':'📘';
+  document.getElementById('sctxFpName').textContent  = file.name;
+  document.getElementById('sctxFpSize').textContent  = formatBytes(file.size);
+  document.getElementById('sctxFilePreview').style.display = 'flex';
+  document.getElementById('sctxUploadZone').style.display  = 'none';
+}
+
+function sctxClearFileInput(){
+  selectedSCTXFile = null;
+  document.getElementById('sctxFileInput').value = '';
+  document.getElementById('sctxFilePreview').style.display = 'none';
+  document.getElementById('sctxUploadZone').style.display  = 'block';
+  document.getElementById('sctx_p1DocDesc').value = '';
+}
+
+async function uploadSCTXFileToStorage(file, projectId){
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const ts   = Date.now();
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const storagePath = `${projectId}/${ts}_${safe}`;
+  const bar  = document.getElementById('sctxUploadBar');
+  const barW = document.getElementById('sctxUploadProgressBar');
+  barW.style.display = 'block'; bar.style.width = '15%';
+  const { data: sessionData } = await db.auth.getSession();
+  const token = sessionData?.session?.access_token || SUPABASE_KEY;
+  const mimeType = ext==='pdf'?'application/pdf':ext==='docx'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/msword';
+  const uploadUrl = `${SUPABASE_URL}/storage/v1/object/document/${storagePath}`;
+  bar.style.width = '30%';
+  const uploadResp = await fetch(uploadUrl, {
+    method:'POST',
+    headers:{ 'Authorization':`Bearer ${token}`, 'apikey':SUPABASE_KEY, 'Content-Type':mimeType, 'x-upsert':'false', 'Cache-Control':'3600' },
+    body: file
+  });
+  bar.style.width = '80%';
+  if(!uploadResp.ok){
+    let errMsg=`HTTP ${uploadResp.status}`;
+    try{ const j=await uploadResp.json(); errMsg=j.message||j.error||errMsg; }catch(e){}
+    throw new Error('Upload Storage lỗi: '+errMsg);
+  }
+  const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/document/${storagePath}`;
+  bar.style.width = '100%';
+  return { path: storagePath, publicUrl, ext };
+}
+
+// ─── SCTX LOAD PROJECT DOCS ───────────────────────────────────────
+async function loadSCTXProjDocs(id){
+  const listEl  = document.getElementById('sctxDocList');
+  const countEl = document.getElementById('sctxDtDocsCount');
+  if(!listEl) return;
+  listEl.innerHTML = '<div class="empty-state"><div class="sp"></div></div>';
+  const { data, error } = await db.from('document')
+    .select('*').eq('project_id', id)
+    .order('ngay_upload', { ascending: false });
+  if(error){ listEl.innerHTML='<div class="empty-state">Lỗi tải tài liệu</div>'; return; }
+  if(countEl) countEl.textContent = data?.length||0;
+  if(!data||!data.length){ listEl.innerHTML='<div class="empty-state" style="padding:32px">📭 Chưa có tài liệu nào được đính kèm</div>'; return; }
+  listEl.innerHTML = data.map(doc => {
+    const ext  = doc.loai_file||'pdf';
+    const icon = ext==='pdf'?'📕':'📘';
+    const date = doc.ngay_upload ? new Date(doc.ngay_upload).toLocaleString('vi-VN') : '–';
+    const size = doc.kich_thuoc  ? formatBytes(doc.kich_thuoc) : '';
+    return `<div class="doc-item">
+      <span class="doc-item-icon">${icon}</span>
+      <div class="doc-item-info">
+        <div class="doc-item-name">${doc.ten_tai_lieu||doc.ten_file}</div>
+        <div class="doc-item-meta">
+          <span>📎 ${doc.ten_file}</span>
+          ${size?`<span>💾 ${size}</span>`:''}
+          <span>👤 ${doc.nguoi_upload||'–'}</span>
+          <span>🕐 ${date}</span>
+          ${doc.mo_ta?`<span style="color:var(--text)">📝 ${doc.mo_ta}</span>`:''}
+        </div>
+      </div>
+      <div class="doc-item-actions">
+        <button class="doc-btn" onclick="viewDoc('${doc.public_url}','${doc.ten_tai_lieu||doc.ten_file}','${doc.loai_file}')">👁 Xem</button>
+        <a class="doc-btn" href="${doc.public_url}" target="_blank" download="${doc.ten_file}">⬇ Tải</a>
+        <button class="doc-btn del" onclick="deleteSCTXDoc('${doc.id}','${doc.storage_path}')">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteSCTXDoc(docId, storagePath){
+  if(!confirm('Xác nhận xoá tài liệu này?')) return;
+  try{
+    await db.storage.from('document').remove([storagePath]);
+    await db.from('document').delete().eq('id', docId);
+    toast('🗑 Đã xoá tài liệu','ok');
+    if(curSCTXDetailId) await loadSCTXProjDocs(curSCTXDetailId);
+  } catch(e){ toast('❌ Lỗi xoá: '+e.message,'err'); }
+}
+
+// ─── CREATE PROJECT ────────────────────────────────────────────────
+function openSCTXNewProject(){
+  ['sctx_np_ten','sctx_np_tiendo','sctx_np_vm','sctx_np_pt','sctx_np_ph','sctx_np_don_vi','sctx_np_thoigian'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('sctx_np_tt').value='P4';
+  document.getElementById('sctx_np_cham').checked=false;
+  openM('mSCTXNewProj');
+}
+async function submitSCTXNewProject(){
+  const ten  = document.getElementById('sctx_np_ten').value.trim();
+  const tt   = document.getElementById('sctx_np_tt').value;
+  const td   = document.getElementById('sctx_np_tiendo').value.trim();
+  const vm   = document.getElementById('sctx_np_vm').value.trim();
+  const pt   = document.getElementById('sctx_np_pt').value.trim();
+  const ph   = document.getElementById('sctx_np_ph').value.trim();
+  const dv   = document.getElementById('sctx_np_don_vi').value.trim();
+  const tg   = document.getElementById('sctx_np_thoigian').value.trim();
+  const cham = document.getElementById('sctx_np_cham').checked;
+  if(!ten){ toast('Vui lòng nhập tên công trình SCTX','warn'); return; }
+  const sameStatus = allSCTX.filter(p=>p.trang_thai===tt);
+  const nextStt = sameStatus.length ? Math.max(...sameStatus.map(p=>p.stt||0))+1 : 1;
+  const newProj = {
+    stt: nextStt, ten_cong_trinh: ten, nguon_von: 'SCTX', trang_thai: tt,
+    tien_do: td||null, vuong_mac: vm||null, phu_trach: pt||null, phoi_hop: ph||null,
+    don_vi_dang_ky: dv||null, thoi_gian_hoan_thanh: tg||null,
+    is_cham_tien_do: cham, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+  };
+  try{
+    const { error } = await db.from('sctx_projects').insert(newProj);
+    if(error) throw error;
+    toast('✅ Đã tạo công trình SCTX mới!','ok');
+    closeM('mSCTXNewProj');
+    await loadSCTX();
+  } catch(e){ toast('❌ Lỗi tạo SCTX: '+e.message,'err'); }
+}
+
+// ─── DETAIL MODAL ─────────────────────────────────────────────────
+let curSCTXDetailId = null;
+function openSCTXDetail(id){
+  curSCTXDetailId = id;
+  const p = allSCTX.find(x => String(x.id) === String(id)); if(!p) return;
+  const st = SCTX_ST[p.trang_thai];
+  document.getElementById('sctxDetailTitle').textContent = p.ten_cong_trinh.substring(0,55)+(p.ten_cong_trinh.length>55?'…':'');
+  document.getElementById('sctxDetailMeta').innerHTML = `
+    <div class="ii"><label>Trạng thái</label><div class="val">${st?`<span class="badge" style="background:${st.color}22;color:${st.color};border:1px solid ${st.color}55">${st.label}</span>`:p.trang_thai||'–'}</div></div>
+    <div class="ii"><label>Đơn vị đăng ký</label><div class="val">${p.don_vi_dang_ky||'–'}</div></div>
+    <div class="ii"><label>Giá trị KT (triệu)</label><div class="val" style="color:#f59e0b;font-weight:700">${p.gia_tri_khai_toan?Number(p.gia_tri_khai_toan).toLocaleString('vi-VN'):'–'}</div></div>
+    <div class="ii"><label>Thời gian HT PAKTTCDT</label><div class="val">${p.thoi_gian_hoan_thanh||'–'}</div></div>
+    <div class="ii"><label>Phụ trách</label><div class="val">${p.phu_trach||'–'}</div></div>
+    <div class="ii"><label>Phối hợp</label><div class="val">${p.phoi_hop||'–'}</div></div>
+    <div class="ii"><label>Chậm tiến độ</label><div class="val">${p.is_cham_tien_do?'<span style="color:var(--danger);font-weight:700">🚨 Có</span>':'<span style="color:var(--ok)">✅ Không</span>'}</div></div>
+    <div class="ii"><label>Cập nhật lần cuối</label><div class="val" style="font-size:11px;font-family:var(--mono)">${p.updated_at?new Date(p.updated_at).toLocaleString('vi-VN'):'–'}</div></div>`;
+  document.getElementById('sctxDetailProg').textContent = p.tien_do || 'Chưa có thông tin tiến độ';
+  document.getElementById('sctxDetailVM').innerHTML = p.vuong_mac
+    ? `<label class="fl" style="color:var(--warn)">⚠️ Vướng mắc</label>
+       <div style="font-size:12px;color:var(--warn);background:rgba(255,179,71,.08);padding:10px 12px;border-radius:7px;border:1px solid rgba(255,179,71,.2);line-height:1.6">${p.vuong_mac}</div>` : '';
+  if(p.ghi_chu){
+    document.getElementById('sctxDetailVM').innerHTML += `
+      <label class="fl" style="margin-top:10px;color:var(--muted)">📝 Ghi chú</label>
+      <div style="font-size:12px;color:var(--muted);background:rgba(255,255,255,.03);padding:10px 12px;border-radius:7px;border:1px solid var(--border);line-height:1.6">${p.ghi_chu}</div>`;
+  }
+  const firstTab = document.querySelector('#mSCTXDetail .mtab');
+  if(firstTab) switchSCTXTab('sctxDtInfo', firstTab);
+  loadSCTXProjLog(id);
+  loadSCTXProjDocs(id);
+  openM('mSCTXDetail');
+}
+function switchSCTXTab(id, btn){
+  ['sctxDtInfo','sctxDtLog','sctxDtDocs'].forEach(n=>{ const el=document.getElementById(n); if(el) el.style.display='none'; });
+  const mtabs = btn.closest('.mtabs').querySelectorAll('.mtab');
+  mtabs.forEach(el=>el.classList.remove('active'));
+  document.getElementById(id).style.display='block';
+  if(btn) btn.classList.add('active');
+}
+async function loadSCTXProjLog(id){
+  const el = document.getElementById('sctxProjLog'); if(!el) return;
+  el.innerHTML = '<div class="empty-state"><div class="sp"></div></div>';
+  try{
+    const { data, error } = await db.from('progress_logs_sctx')
+      .select('*').eq('project_id', id)
+      .order('ngay_cap_nhat', { ascending: false }).limit(30);
+    if(error || !data || !data.length){
+      el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:16px;text-align:center">Chưa có lịch sử cập nhật nào</div>';
+      return;
+    }
+    el.innerHTML = data.map(l => `
+      <div class="pli">
+        <div class="pli-dot"></div>
+        <div class="pli-body">
+          <div class="pli-text">${l.noi_dung_tien_do}</div>
+          <div class="pli-meta">
+            <span>👤 ${l.nguoi_cap_nhat || 'Hệ thống'}</span>
+            <span>🕐 ${new Date(l.ngay_cap_nhat).toLocaleString('vi-VN')}</span>
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e){ el.innerHTML = `<div class="empty-state">Lỗi tải dữ liệu: ${e.message}</div>`; }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ── GANTT SCL ENGINE  (bảng: gantt_scl_rows) ─────────────────────
+// ══════════════════════════════════════════════════════════════════
+
+// Phase colours matching SCL context (reuse PHASE_COLORS + add new phases)
+const SCL_PHASE_COLORS = {
+  'KHLCNT':            { bg:'rgba(251,146,60,.15)',   border:'rgba(251,146,60,.4)',   text:'#fdba74', dot:'#fdba74' },
+  'Dự toán gói thầu':  { bg:'rgba(244,114,182,.15)',  border:'rgba(244,114,182,.4)',  text:'#f9a8d4', dot:'#f9a8d4' },
+  'E-HSMT':            { bg:'rgba(52,211,153,.15)',   border:'rgba(52,211,153,.4)',   text:'#6ee7b7', dot:'#6ee7b7' },
+  'KQLCNT':            { bg:'rgba(250,204,21,.15)',   border:'rgba(250,204,21,.4)',   text:'#fde047', dot:'#fde047' },
+  'Hợp đồng':          { bg:'rgba(74,222,128,.15)',   border:'rgba(74,222,128,.4)',   text:'#86efac', dot:'#86efac' },
+  'Duyệt DM':          { bg:'rgba(167,139,250,.15)',  border:'rgba(167,139,250,.4)',  text:'#c4b5fd', dot:'#c4b5fd' },
+  'PAKT/TVTK':         { bg:'rgba(96,165,250,.15)',   border:'rgba(96,165,250,.4)',   text:'#93c5fd', dot:'#93c5fd' },
+  'KHCP':              { bg:'rgba(0,194,255,.12)',    border:'rgba(0,194,255,.4)',    text:'#00c2ff', dot:'#00c2ff' },
+};
+
+const SCL_PHASE_ORDER = ['KHLCNT','Dự toán gói thầu','E-HSMT','KQLCNT','Hợp đồng','Duyệt DM','PAKT/TVTK','KHCP'];
+
+// SCL group label mapping
+const SCL_GROUP_LABEL = {
+  CHUYEN_TIEP: 'Chuyển tiếp',
+  GIAO_KHCP:   'Giao KHCP',
+  THONG_QUA:   'Thông qua',
+  TRINH_DM:    'Trình DM',
+};
+
+// Live data store for SCL milestones
+let ganttSclLiveData   = {};  // 'projName::phase::subPhase' → row
+let ganttSclCompletions = {}; // milestone-level: same key → true
+let ganttSclPhaseComp   = {}; // phase-level: 'projIdx::phase' → true
+let GANTT_SCL_DATA      = []; // [{n, scl_group, m:[{g,s,d}]}]
+let ganttSclStatusFilter = '';
+let lastSclAlerts = [];
+let curGmSclIdx = -1;
+let curGmSclProjName = null;
+let _sclLoaded = false; // avoid double-load
+
+function getMsSclKey(projName, phase, subPhase){ return projName + '::' + phase + '::' + subPhase; }
+
+// ── LOAD FROM SUPABASE ─────────────────────────────────────────────
+async function loadGanttSclFromSupabase(){
+  if(_sclLoaded) return;
+  try{
+    const { data, error } = await db.from('gantt_scl_rows').select('*').order('sort_order');
+    if(error){ console.warn('gantt_scl_rows error:', error.message); return; }
+    ganttSclLiveData   = {};
+    ganttSclCompletions= {};
+    ganttSclPhaseComp  = {};
+
+    if(data && data.length > 0){
+      const projMap = {};
+      data.forEach(row => {
+        if(!projMap[row.project_name]) projMap[row.project_name] = [];
+        projMap[row.project_name].push(row);
+      });
+      GANTT_SCL_DATA = Object.entries(projMap).map(([name, rows]) => {
+        rows.sort((a,b)=>{
+          const pi = (SCL_PHASE_ORDER.indexOf(a.phase)===-1?99:SCL_PHASE_ORDER.indexOf(a.phase))
+                   - (SCL_PHASE_ORDER.indexOf(b.phase)===-1?99:SCL_PHASE_ORDER.indexOf(b.phase));
+          if(pi!==0) return pi;
+          return (parseInt(a.sort_order)||0)-(parseInt(b.sort_order)||0);
+        });
+        const grp = rows[0].scl_group || '';
+        return { n: name, scl_group: grp, m: rows.map(r=>({g:r.phase,s:r.sub_phase,d:r.planned_date})) };
+      });
+    }
+
+    if(data) data.forEach(row => {
+      const key = getMsSclKey(row.project_name, row.phase, row.sub_phase);
+      ganttSclLiveData[key] = row;
+      if(row.is_completed) ganttSclCompletions[key] = true;
+    });
+
+    // Sync phase completions
+    GANTT_SCL_DATA.forEach((gd, gi) => {
+      const phaseGroups = {};
+      gd.m.forEach(m => { if(!phaseGroups[m.g]) phaseGroups[m.g]=[]; phaseGroups[m.g].push(m); });
+      Object.entries(phaseGroups).forEach(([phase, mss]) => {
+        const allDone = mss.length > 0 && mss.every(m => {
+          const k = getMsSclKey(gd.n, phase, m.s);
+          return ganttSclLiveData[k]?.is_completed === true;
+        });
+        if(allDone){
+          ganttSclPhaseComp[gi + '::' + phase] = true;
+          ganttSclPhaseComp[gd.n + '|SCLPHASE|' + phase] = true;
+        }
+      });
+    });
+    _sclLoaded = true;
+    console.log('Loaded', data ? data.length : 0, 'SCL Gantt milestones,', GANTT_SCL_DATA.length, 'projects');
+  } catch(e){ console.warn('loadGanttSclFromSupabase error:', e.message); }
+}
+
+// ── STATUS HELPERS ─────────────────────────────────────────────────
+function getSclProjectWorstStatus(gd, gi, wd){
+  const groups = {};
+  gd.m.forEach(m => { if(!groups[m.g]) groups[m.g]=[]; groups[m.g].push(m); });
+  let worst = 'future';
+  for(const [grp, mss] of Object.entries(groups)){
+    const done = ganttSclPhaseComp[gi+'::'+grp];
+    if(done){ if(worst==='future'||worst==='ok') worst='done'; continue; }
+    for(const m of mss){
+      const k = getMsSclKey(gd.n, grp, m.s);
+      const msDone = ganttSclCompletions[k] || ganttSclLiveData[k]?.is_completed;
+      const s = getMsStatus(m.d, wd, !!msDone);
+      if(s.cls==='over' && worst!=='over') worst='over';
+      else if(s.cls==='warn' && worst!=='over') worst='warn';
+      else if(s.cls==='ok' && worst==='future') worst='ok';
+      else if(s.cls==='done' && worst==='future') worst='done';
+    }
+  }
+  return worst;
+}
+
+function setGanttSclStatusFilter(btn, status){
+  ganttSclStatusFilter = status;
+  document.querySelectorAll('.g-legend-btn-scl').forEach(b => b.classList.toggle('active', b===btn));
+  renderGanttScl();
+}
+
+// ── RENDER SCL GANTT LIST ─────────────────────────────────────────
+function renderGanttScl(){
+  const c  = document.getElementById('ganttSclCanvas');
+  if(!c) return;
+  const ft = document.getElementById('ganttSclFilter')?.value || '';
+  const wd = parseInt(document.getElementById('warnDaysScl')?.value || '14');
+
+  // Collect SCL alerts
+  lastSclAlerts = [];
+  GANTT_SCL_DATA.forEach((gd, gi) => {
+    const groups = {};
+    gd.m.forEach(m => { if(!groups[m.g]) groups[m.g]=[]; groups[m.g].push(m); });
+    Object.entries(groups).forEach(([grp, mss]) => {
+      if(ganttSclPhaseComp[gi+'::'+grp]) return;
+      mss.forEach(m => {
+        const k = getMsSclKey(gd.n, grp, m.s);
+        if(ganttSclCompletions[k] || ganttSclLiveData[k]?.is_completed) return;
+        const s = getMsStatus(m.d, wd, false);
+        if(s.cls==='over'||s.cls==='warn'){
+          lastSclAlerts.push({gi, projectName:gd.n, phase:grp, sub:m.s, date:m.d, status:s});
+        }
+      });
+    });
+  });
+
+  const alertBar = document.getElementById('ganttSclAlertBar');
+  const over = lastSclAlerts.filter(a=>a.status.cls==='over');
+  const warn = lastSclAlerts.filter(a=>a.status.cls==='warn');
+  if(lastSclAlerts.length){
+    alertBar.style.display='block';
+    alertBar.innerHTML = `🚨 <strong>Phát hiện ${lastSclAlerts.length} cột mốc SCL cần chú ý</strong>:
+      <span style="color:var(--danger)">${over.length} quá hạn</span>,
+      <span style="color:var(--warn)">${warn.length} sắp đến hạn trong ${wd} ngày</span>
+      &nbsp;·&nbsp; <span style="color:var(--accent);text-decoration:underline">Xem chi tiết →</span>`;
+  } else {
+    alertBar.style.display='none';
+  }
+
+  const WS_INFO = {
+    done:   {icon:'✅',label:'Hoàn thành',      color:'#6ee7b7'},
+    ok:     {icon:'🟢',label:'Đúng tiến độ',    color:'var(--accent)'},
+    warn:   {icon:'🟡',label:'Sắp đến hạn',     color:'var(--warn)'},
+    over:   {icon:'🔴',label:'Quá hạn',         color:'var(--danger)'},
+    future: {icon:'⚪',label:'Chưa có dữ liệu',  color:'rgba(255,255,255,.3)'},
+  };
+
+  const rows = GANTT_SCL_DATA.map((gd, gi) => {
+    if(ft && gd.scl_group !== ft) return null;
+    const ws = getSclProjectWorstStatus(gd, gi, wd);
+    if(ganttSclStatusFilter && ws !== ganttSclStatusFilter) return null;
+    return {gi, gd, ws};
+  }).filter(Boolean);
+
+  // Also show allSCL projects not in GANTT_SCL_DATA
+  const extraRows = [];
+  if(!ganttSclStatusFilter || ganttSclStatusFilter==='future'){
+    allSCL.forEach(p => {
+      const alreadyIn = GANTT_SCL_DATA.some(gd =>
+        gd.n.trim().toLowerCase() === (p.ten_cong_trinh||'').trim().toLowerCase()
+      );
+      if(!alreadyIn && (!ft || p.trang_thai===ft)){
+        extraRows.push({gi:-1, gd:null, ws:'future', sclProj:p});
+      }
+    });
+  }
+
+  const allRows = [...rows, ...extraRows];
+
+  if(!allRows.length){
+    c.innerHTML='<div class="empty-state" style="padding:40px">Không có dự án SCL phù hợp bộ lọc</div>';
+    return;
+  }
+
+  const tableRows = allRows.map(({gi, gd, ws, sclProj}) => {
+    const projName = gd ? gd.n : (sclProj?.ten_cong_trinh || '');
+    const scl_group = gd ? gd.scl_group : sclProj?.trang_thai;
+    const grpLabel = SCL_GROUP_LABEL[scl_group] || scl_group || '';
+    const nm = projName.length > 58 ? projName.substring(0,58)+'…' : projName;
+    const wd2 = parseInt(document.getElementById('warnDaysScl')?.value||'14');
+
+    // Build phase pills
+    let phasePills = '';
+    let realWs = ws;
+    if(gd){
+      const groups = [...new Set(gd.m.map(m=>m.g))];
+      phasePills = groups.map(grp => {
+        if(ganttSclPhaseComp[gi+'::'+grp]) return `<span class="g-ms-pill done">✅ ${grp}</span>`;
+        const mss = gd.m.filter(m=>m.g===grp);
+        const worst = mss.reduce((acc,m) => {
+          const k = getMsSclKey(gd.n, grp, m.s);
+          const done = ganttSclCompletions[k] || ganttSclLiveData[k]?.is_completed;
+          const s = getMsStatus(m.d, wd2, !!done);
+          if(s.cls==='over') return 'over';
+          if(s.cls==='warn'&&acc!=='over') return 'warn';
+          if(s.cls==='ok'&&acc==='future') return 'ok';
+          if(s.cls==='done'&&acc==='future') return 'done';
+          return acc;
+        },'future');
+        const dotColor = worst==='over'?'var(--danger)':worst==='warn'?'var(--warn)':worst==='ok'?'var(--accent)':worst==='done'?'#6ee7b7':'rgba(255,255,255,.25)';
+        return `<span class="g-ms-pill ${worst}"><span style="width:6px;height:6px;border-radius:50%;background:${dotColor};display:inline-block"></span>${grp}</span>`;
+      }).join('');
+    }
+
+    const wsi = WS_INFO[realWs] || WS_INFO.future;
+    const mCount = gd ? gd.m.length : 0;
+    const safeProjName = projName.replace(/'/g,"\\'");
+
+    const onclickAttr = gd
+      ? `onclick="openGanttSclModal(${gi},'${safeProjName}')"`
+      : `onclick="openAddSclMilestoneModal('${safeProjName}')"`; 
+
+    // SCL group badge color
+    const groupBadgeColors = {
+      CHUYEN_TIEP:'#00c2ff', GIAO_KHCP:'#8aa8ff', THONG_QUA:'#00e5b0', TRINH_DM:'#ff8050'
+    };
+    const badgeC = groupBadgeColors[scl_group] || '#94a3b8';
+
+    return `<tr class="g-list-row" ${onclickAttr}>
+      <td style="width:36px;text-align:center;font-size:16px;vertical-align:middle">${wsi.icon}</td>
+      <td style="vertical-align:middle">
+        <div style="font-weight:600;font-size:13px;margin-bottom:4px;line-height:1.4">${nm}</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:${badgeC}20;color:${badgeC};border:1px solid ${badgeC}40">${grpLabel}</span>
+        </div>
+      </td>
+      <td style="min-width:130px;vertical-align:middle">
+        ${gd
+          ? `<span style="font-size:12px;font-weight:600;color:${wsi.color}">${wsi.icon} ${wsi.label}</span>`
+          : '<span style="font-size:11px;color:var(--muted);font-style:italic">Chưa có dữ liệu</span>'}
+      </td>
+      <td style="min-width:260px;vertical-align:middle">
+        ${gd ? `<div style="display:flex;flex-wrap:wrap;gap:2px">${phasePills}</div>` : ''}
+      </td>
+      <td style="text-align:center;font-size:12px;color:var(--muted);white-space:nowrap;vertical-align:middle">${mCount ? mCount+' mốc' : '—'}</td>
+      <td style="text-align:right;padding-right:16px;white-space:nowrap;vertical-align:middle">
+        <button onclick="event.stopPropagation();openAddSclMilestoneModal('${safeProjName}')" style="font-family:var(--font);font-size:11px;font-weight:700;padding:5px 12px;border-radius:7px;border:1px solid rgba(0,194,255,.35);background:rgba(0,194,255,.1);color:var(--accent);cursor:pointer;transition:all .15s;white-space:nowrap" onmouseover="this.style.background='rgba(0,194,255,.2)'" onmouseout="this.style.background='rgba(0,194,255,.1)'">＋ Thêm phân kỳ</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  c.innerHTML = `<div style="overflow-x:auto">
+    <table class="g-list-table">
+      <thead>
+        <tr style="border-bottom:2px solid rgba(255,255,255,.08)">
+          <th style="width:36px;padding:10px"></th>
+          <th style="padding:10px 16px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);text-align:left">Tên công trình SCL</th>
+          <th style="padding:10px 16px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);text-align:left">Tình trạng</th>
+          <th style="padding:10px 16px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);text-align:left">Giai đoạn</th>
+          <th style="padding:10px;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);text-align:center">Cột mốc</th>
+          <th style="padding:10px 16px;width:160px"></th>
+        </tr>
+      </thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <div style="padding:10px 16px;font-size:11px;color:var(--muted);border-top:1px solid rgba(255,255,255,.05)">
+      🔧 Hiển thị ${allRows.length} dự án SCL · ${rows.length} có dữ liệu phân kỳ · Nhấp vào dự án để xem chi tiết
+    </div>
+  </div>`;
+}
+
+// ── GANTT SCL DETAIL MODAL ────────────────────────────────────────
+function openGanttSclModal(gi, projName){
+  curGmSclIdx = gi;
+  curGmSclProjName = null;
+  const title = (gi >= 0 && GANTT_SCL_DATA[gi]) ? GANTT_SCL_DATA[gi].n : projName;
+  document.getElementById('gmTitle').textContent = '🔧 ' + title;
+  document.getElementById('ganttModal').classList.add('open');
+  renderGmSclDetail();
+}
+
+function renderGmSclDetail(){
+  const body = document.getElementById('gmBody');
+  if(curGmSclIdx < 0){ body.innerHTML=''; return; }
+  const gd = GANTT_SCL_DATA[curGmSclIdx];
+  if(!gd){ body.innerHTML=''; return; }
+  renderGmSclDetailWithGd(gd);
+}
+
+function renderGmSclDetailWithGd(gd){
+  if(!gd) return;
+  const wd   = parseInt(document.getElementById('gmWarnDays')?.value || '14');
+  const body = document.getElementById('gmBody');
+  const gi   = curGmSclIdx;
+
+  const groups = {};
+  gd.m.forEach(m => { if(!groups[m.g]) groups[m.g]=[]; groups[m.g].push(m); });
+
+  const allDates = gd.m.map(m => new Date(m.d));
+  let minD = new Date(Math.min(...allDates));
+  let maxD = new Date(Math.max(...allDates));
+  minD = new Date(minD.getFullYear(), minD.getMonth() - 1, 1);
+  maxD = new Date(maxD.getFullYear(), maxD.getMonth() + 2, 0);
+  const totalMs = maxD - minD || 1;
+
+  const months = [];
+  let cur = new Date(minD);
+  while(cur <= maxD){ months.push(new Date(cur)); cur.setMonth(cur.getMonth()+1); }
+  const mPct = (100/months.length).toFixed(3);
+  const todayPct = Math.max(0,Math.min(100,(Date.now()-minD)/totalMs*100)).toFixed(2);
+
+  const mHdr = months.map(m =>
+    `<div class="gm-month-cell" style="flex:0 0 ${mPct}%">${m.toLocaleDateString('vi-VN',{month:'short',year:'2-digit'})}</div>`
+  ).join('');
+
+  const phasesHtml = Object.entries(groups).map(([grp, mss]) => {
+    const pc = SCL_PHASE_COLORS[grp] || {bg:'rgba(255,255,255,.05)',border:'rgba(255,255,255,.2)',text:'#fff',dot:'#fff'};
+    const isDone = !!ganttSclPhaseComp[gi+'::'+grp];
+    const sorted = [...mss].sort((a,b)=>new Date(a.d)-new Date(b.d));
+
+    const cards = sorted.map(m => {
+      const k = getMsSclKey(gd.n, grp, m.s);
+      const liveRow = ganttSclLiveData[k];
+      const msId = liveRow?.id || '';
+      const msDone = isDone || !!ganttSclCompletions[k] || !!liveRow?.is_completed;
+      const sForCard = getMsStatus(m.d, wd, msDone);
+      const dStr = new Date(m.d).toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});
+      const c2done = {
+        done:{bg:'rgba(110,231,183,.1)',border:'rgba(110,231,183,.3)',badge:'#6ee7b7'},
+        ok:  {bg:'rgba(0,194,255,.08)', border:'rgba(0,194,255,.2)', badge:'#00c2ff'},
+        warn:{bg:'rgba(255,179,71,.1)', border:'rgba(255,179,71,.3)', badge:'var(--warn)'},
+        over:{bg:'rgba(255,79,79,.1)',  border:'rgba(255,79,79,.3)',  badge:'var(--danger)'},
+        future:{bg:'rgba(255,255,255,.03)',border:'rgba(255,255,255,.08)',badge:'#5f8aaa'},
+      };
+      const cc = c2done[sForCard.cls] || c2done.future;
+      const safeMsName = m.s.replace(/'/g,"\\'");
+      const safeGrp    = grp.replace(/'/g,"\\'");
+      const safeProj   = gd.n.replace(/'/g,"\\'");
+
+      return `<div class="gm-ms-card" style="background:${cc.bg};border-color:${cc.border};position:relative${msDone?';opacity:.75':''}">
+        <button onclick="deleteSclMilestone('${safeProj}','${safeGrp}','${safeMsName}','${msId}',event)"
+          style="position:absolute;top:6px;right:6px;width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,79,79,.4);background:rgba(255,79,79,.1);color:var(--danger);font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;transition:all .15s;z-index:10"
+          onmouseover="this.style.background='rgba(255,79,79,.3)'" onmouseout="this.style.background='rgba(255,79,79,.1)'" title="Xóa cột mốc">×</button>
+        <button onclick="toggleSclMsDone('${safeProj}','${safeGrp}','${safeMsName}','${msId}',event)"
+          style="position:absolute;top:6px;left:6px;width:18px;height:18px;border-radius:50%;border:1px solid ${msDone?'#6ee7b7':'rgba(110,231,183,.35)'};background:${msDone?'rgba(110,231,183,.3)':'rgba(110,231,183,.07)'};color:${msDone?'#6ee7b7':'rgba(110,231,183,.6)'};font-size:10px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;transition:all .2s;z-index:10"
+          title="${msDone?'Bỏ đánh dấu':'Đánh dấu hoàn thành'}">✓</button>
+        <div class="ms-name" style="color:${pc.text};cursor:pointer;padding:0 22px;text-align:center;${msDone?'text-decoration:line-through;opacity:.7':''}"
+          onclick="openSclMsEdit('${safeProj}','${safeGrp}','${safeMsName}','${m.d}','${msId}',event)"
+          title="Nhấp để chỉnh sửa ngày">${m.s} <span style="font-size:9px;opacity:.5">✏️</span></div>
+        <div class="ms-date" style="color:var(--muted);font-family:var(--mono)">${dStr}</div>
+        <span class="ms-status" style="background:${cc.bg};color:${cc.badge};border:1px solid ${cc.border}">${sForCard.label}</span>
+      </div>`;
+    }).join('');
+
+    const firstD = new Date(sorted[0].d);
+    const lastD  = new Date(sorted[sorted.length-1].d);
+    const barL   = Math.max(0,(firstD-minD)/totalMs*100).toFixed(2);
+    const barW   = Math.max(0.3,(lastD-firstD)/totalMs*100).toFixed(2);
+    const dotHtml= sorted.map(m => {
+      const k = getMsSclKey(gd.n, grp, m.s);
+      const msDone = isDone || !!ganttSclCompletions[k] || !!ganttSclLiveData[k]?.is_completed;
+      const s   = getMsStatus(m.d, wd, msDone);
+      const pct = Math.max(0,Math.min(100,(new Date(m.d)-minD)/totalMs*100)).toFixed(2);
+      const dotC = {done:'#6ee7b7',ok:'var(--accent)',warn:'var(--warn)',over:'var(--danger)',future:'rgba(255,255,255,.25)'}[s.cls];
+      return `<div style="position:absolute;left:${pct}%;top:50%;transform:translate(-50%,-50%);z-index:5"
+        title="${m.s}: ${new Date(m.d).toLocaleDateString('vi-VN')} | ${s.label}">
+        <div style="width:11px;height:11px;border-radius:50%;background:${dotC};border:2px solid rgba(0,0,0,.4);${s.cls==='warn'||s.cls==='over'?'animation:pulse 1.2s infinite':''}"></div>
+      </div>`;
+    }).join('');
+
+    const safeGrpBtn = grp.replace(/'/g,"\\'");
+    const safeProjBtn= gd.n.replace(/'/g,"\\'");
+    const doneBtn = `<button class="gm-done-btn ${isDone?'marked':''}" onclick="toggleSclPhaseDone('${safeProjBtn}',${gi},'${safeGrpBtn}')" title="Đánh dấu toàn bộ giai đoạn này đã hoàn thành">
+      ${isDone?'✅ Đã hoàn thành':'☑ Đánh dấu hoàn thành'}</button>`;
+
+    return `<div class="gm-phase-section">
+      <div class="gm-phase-hdr" style="background:${pc.bg};border-bottom-color:${pc.border}">
+        <span style="width:10px;height:10px;border-radius:50%;background:${pc.dot};display:inline-block;flex-shrink:0"></span>
+        <h3 style="color:${pc.text}">${grp}</h3>
+        <span style="font-size:11px;color:var(--muted)">${sorted.length} cột mốc · ${new Date(sorted[0].d).toLocaleDateString('vi-VN')} → ${new Date(sorted[sorted.length-1].d).toLocaleDateString('vi-VN')}</span>
+        ${doneBtn}
+      </div>
+      <div style="padding:6px 16px 2px;background:rgba(0,0,0,.15)">
+        <div class="gm-timeline-inner">
+          <div class="gm-month-hdr">${mHdr}</div>
+          <div style="position:relative;height:36px">
+            <div style="position:absolute;left:${todayPct}%;top:0;bottom:0;width:1.5px;background:rgba(255,79,79,.6);z-index:20">
+              <div style="position:absolute;top:2px;left:3px;font-size:8px;font-weight:700;color:var(--danger);white-space:nowrap">Hôm nay</div>
+            </div>
+            <div style="position:absolute;left:${barL}%;width:${barW}%;top:50%;transform:translateY(-50%);height:4px;background:${pc.dot};opacity:${isDone?.9:.4};border-radius:2px;min-width:6px"></div>
+            ${dotHtml}
+          </div>
+        </div>
+      </div>
+      <div class="gm-milestones">${cards}</div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML = phasesHtml || '<div class="empty-state">Không có dữ liệu phân kỳ SCL</div>';
+}
+
+// ── PHASE DONE TOGGLE (SCL) ────────────────────────────────────────
+function toggleSclPhaseDone(projName, gi, grp){
+  const key = gi+'::'+grp;
+  ganttSclPhaseComp[key] = !ganttSclPhaseComp[key];
+  // Persist to Supabase: mark all milestones in phase done/undone
+  const gd = GANTT_SCL_DATA[gi];
+  if(gd){
+    const mss = gd.m.filter(m=>m.g===grp);
+    mss.forEach(async m => {
+      const k = getMsSclKey(gd.n, grp, m.s);
+      const liveRow = ganttSclLiveData[k];
+      if(liveRow?.id){
+        const done = !!ganttSclPhaseComp[key];
+        await db.from('gantt_scl_rows').update({
+          is_completed: done,
+          completed_at: done ? new Date().toISOString() : null,
+          completed_by: currentUser || 'user',
+          updated_at:   new Date().toISOString(),
+        }).eq('id', liveRow.id);
+        if(done) ganttSclCompletions[k] = true;
+        else delete ganttSclCompletions[k];
+      }
+    });
+  }
+  renderGmSclDetail();
+  renderGanttScl();
+}
+
+// ── MILESTONE DONE TOGGLE (SCL) ───────────────────────────────────
+async function toggleSclMsDone(projName, phase, subPhase, msId, event){
+  if(event) event.stopPropagation();
+  const k = getMsSclKey(projName, phase, subPhase);
+  const newDone = !ganttSclCompletions[k];
+  ganttSclCompletions[k] = newDone;
+  if(!newDone) delete ganttSclCompletions[k];
+  try{
+    const upd = {
+      is_completed: newDone,
+      completed_at: newDone ? new Date().toISOString() : null,
+      completed_by: newDone ? (currentUser || 'user') : null,
+      updated_at:   new Date().toISOString(),
+    };
+    if(msId){
+      await db.from('gantt_scl_rows').update(upd).eq('id', msId);
+    } else {
+      await db.from('gantt_scl_rows').upsert({
+        project_name: projName, phase, sub_phase: subPhase, ...upd
+      }, {onConflict:'project_name,phase,sub_phase'});
+    }
+    if(ganttSclLiveData[k]) ganttSclLiveData[k].is_completed = newDone;
+  } catch(e){ console.warn('toggleSclMsDone error:', e.message); }
+  renderGmSclDetail();
+  renderGanttScl();
+}
+
+// ── DELETE SCL MILESTONE ──────────────────────────────────────────
+async function deleteSclMilestone(projName, phase, subPhase, msId, event){
+  if(event) event.stopPropagation();
+  if(!confirm(`Xóa cột mốc "${subPhase}" của giai đoạn "${phase}"?`)) return;
+  try{
+    if(msId){
+      await db.from('gantt_scl_rows').delete().eq('id', msId);
+    } else {
+      await db.from('gantt_scl_rows').delete()
+        .eq('project_name', projName).eq('phase', phase).eq('sub_phase', subPhase);
+    }
+    // Update local cache
+    const k = getMsSclKey(projName, phase, subPhase);
+    delete ganttSclLiveData[k];
+    delete ganttSclCompletions[k];
+    // Remove from GANTT_SCL_DATA
+    const gd = GANTT_SCL_DATA[curGmSclIdx];
+    if(gd) gd.m = gd.m.filter(m => !(m.g===phase && m.s===subPhase));
+    toast('🗑 Đã xóa cột mốc', 'ok');
+    renderGmSclDetail();
+    renderGanttScl();
+  } catch(e){ toast('Lỗi xóa: '+e.message,'err'); }
+}
+
+// ── EDIT SCL MILESTONE DATE ────────────────────────────────────────
+function openSclMsEdit(projName, phase, subPhase, currentDate, msId, event){
+  if(event) event.stopPropagation();
+  const newDate = prompt(`Chỉnh sửa ngày cho "${subPhase}" (${phase}):\nNgày hiện tại: ${currentDate}\n\nNhập ngày mới (YYYY-MM-DD):`, currentDate);
+  if(!newDate || newDate === currentDate) return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(newDate)){ alert('Định dạng ngày không hợp lệ. Vui lòng nhập YYYY-MM-DD'); return; }
+  saveSclMsDate(projName, phase, subPhase, newDate, msId);
+}
+
+async function saveSclMsDate(projName, phase, subPhase, newDate, msId){
+  try{
+    const upd = { planned_date: newDate, updated_at: new Date().toISOString() };
+    if(msId){
+      await db.from('gantt_scl_rows').update(upd).eq('id', msId);
+    } else {
+      await db.from('gantt_scl_rows').upsert(
+        { project_name: projName, phase, sub_phase: subPhase, ...upd },
+        { onConflict: 'project_name,phase,sub_phase' }
+      );
+    }
+    // Update local cache
+    const k = getMsSclKey(projName, phase, subPhase);
+    if(ganttSclLiveData[k]) ganttSclLiveData[k].planned_date = newDate;
+    // Update GANTT_SCL_DATA
+    const gd = GANTT_SCL_DATA[curGmSclIdx];
+    if(gd){ const m = gd.m.find(m=>m.g===phase&&m.s===subPhase); if(m) m.d=newDate; }
+    toast('📅 Đã cập nhật ngày cột mốc SCL', 'ok');
+    renderGmSclDetail();
+    renderGanttScl();
+  } catch(e){ toast('Lỗi lưu ngày: '+e.message,'err'); }
+}
+
+// ── ADD NEW SCL MILESTONE ─────────────────────────────────────────
+function openAddSclMilestoneModal(projName){
+  const phase    = prompt('Nhập tên giai đoạn (phase):\nVí dụ: KHLCNT, E-HSMT, PAKT/TVTK, KHCP...', 'KHLCNT');
+  if(!phase) return;
+  const subPhase = prompt(`Nhập tên cột mốc (sub-phase) cho giai đoạn "${phase}":`,'');
+  if(!subPhase) return;
+  const dateStr  = prompt('Nhập ngày kế hoạch (YYYY-MM-DD):', new Date().toISOString().substring(0,10));
+  if(!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)){alert('Ngày không hợp lệ');return;}
+
+  saveSclMsDate(projName, phase, subPhase, dateStr, null).then(async () => {
+    _sclLoaded = false;
+    await loadGanttSclFromSupabase();
+    // Re-open modal for same project if it was open
+    if(curGmSclIdx >= 0){
+      renderGmSclDetail();
+    } else {
+      const gi = GANTT_SCL_DATA.findIndex(gd=>gd.n===projName);
+      if(gi>=0){ curGmSclIdx=gi; document.getElementById('ganttModal').classList.add('open'); renderGmSclDetail(); }
+    }
+    renderGanttScl();
+  });
+}
+
+// ── ALERT TABLE FOR SCL ────────────────────────────────────────────
+function openAlertTableScl(){
+  if(!lastSclAlerts.length) return;
+  const over = lastSclAlerts.filter(a=>a.status.cls==='over');
+  const warn = lastSclAlerts.filter(a=>a.status.cls==='warn');
+  const rows = (over.length ? `<tr><td colspan="4" style="padding:8px 16px;font-weight:700;color:var(--danger);font-size:11px;text-transform:uppercase;letter-spacing:.5px">⛔ QUÁ HẠN (${over.length})</td></tr>` : '') +
+    over.map(a=>`<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+      <td style="padding:8px 16px;font-size:13px">🔴</td>
+      <td style="padding:8px;font-size:12px;max-width:280px">${a.projectName.substring(0,55)}</td>
+      <td style="padding:8px;font-size:12px;color:#fdba74">${a.phase} › ${a.sub}</td>
+      <td style="padding:8px 16px;font-size:12px;color:var(--danger);white-space:nowrap">${a.status.label}</td>
+    </tr>`).join('') +
+    (warn.length ? `<tr><td colspan="4" style="padding:8px 16px;font-weight:700;color:var(--warn);font-size:11px;text-transform:uppercase;letter-spacing:.5px">⚠️ SẮP ĐẾN HẠN (${warn.length})</td></tr>` : '') +
+    warn.map(a=>`<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+      <td style="padding:8px 16px;font-size:13px">🟡</td>
+      <td style="padding:8px;font-size:12px;max-width:280px">${a.projectName.substring(0,55)}</td>
+      <td style="padding:8px;font-size:12px;color:#fdba74">${a.phase} › ${a.sub}</td>
+      <td style="padding:8px 16px;font-size:12px;color:var(--warn);white-space:nowrap">${a.status.label}</td>
+    </tr>`).join('');
+
+  document.getElementById('gmTitle').textContent = `🔔 Cảnh báo cột mốc SCL (${lastSclAlerts.length})`;
+  document.getElementById('gmBody').innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead><tr style="border-bottom:2px solid rgba(255,255,255,.08)"><th style="width:36px;padding:8px 16px"></th><th style="padding:8px;text-align:left;font-size:10px;color:var(--muted);text-transform:uppercase">Công trình</th><th style="padding:8px;text-align:left;font-size:10px;color:var(--muted);text-transform:uppercase">Cột mốc</th><th style="padding:8px 16px;text-align:left;font-size:10px;color:var(--muted);text-transform:uppercase">Trạng thái</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  document.getElementById('ganttModal').classList.add('open');
+}
+
+async function checkAndSendAlertsScl(){
+  if(!lastSclAlerts.length){ toast('✅ Không có cảnh báo nào','ok'); return; }
+  openAlertTableScl();
+}
+// ── END GANTT SCL ENGINE ───────────────────────────────────────────
+
 // ─── INIT ────────────────────────────────────────────────────────
 checkSession();
 </script>
+
+<!-- ═══ MODAL: Cập nhật tiến độ SCTX ═══ -->
+<div class="overlay" id="mSCTXProg">
+  <div class="modal" style="max-width:500px">
+    <div class="mh"><span style="font-size:18px">🛠</span><h3>Cập nhật tiến độ SCTX</h3><button class="mclose" onclick="closeM('mSCTXProg')">×</button></div>
+    <div class="mb">
+      <div><label class="fl">Công trình</label>
+        <input id="sctx_p1Name" class="fc" readonly style="background:rgba(255,255,255,.05);cursor:default;color:var(--accent);font-weight:600"/>
+        <input type="hidden" id="sctx_p1Id"/>
+      </div>
+      <div><label class="fl">Nội dung tiến độ mới <span style="color:var(--danger)">*</span></label>
+        <textarea id="sctx_p1TD" class="fc" placeholder="Mô tả chi tiết tình trạng triển khai…"></textarea></div>
+      <div><label class="fl">Vướng mắc (để trống nếu không có)</label>
+        <textarea id="sctx_p1VM" class="fc" style="min-height:60px" placeholder="Mô tả khó khăn, vướng mắc…"></textarea></div>
+      <div class="chkr"><input type="checkbox" id="sctx_p1Cham"/><label for="sctx_p1Cham">🚨 Đánh dấu <strong>chậm tiến độ</strong></label></div>
+      <div><label class="fl">Người cập nhật</label><input id="sctx_p1Nguoi" class="fc" placeholder="VD: Vũ Xuân Thi, Đinh Anh Dũng…"/></div>
+      <div>
+        <label class="fl">📎 Tài liệu đính kèm (PDF hoặc Word, tối đa 20MB)</label>
+        <div class="upload-zone" id="sctxUploadZone" onclick="document.getElementById('sctxFileInput').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');sctxHandleFileDrop(event)">
+          <input type="file" id="sctxFileInput" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onchange="sctxHandleFileSelect(event)"/>
+          <div class="uz-icon">📄</div>
+          <div class="uz-label">Kéo thả file vào đây hoặc <strong>nhấn để chọn</strong></div>
+          <div class="uz-hint">Hỗ trợ: PDF, DOC, DOCX · Tối đa 20MB</div>
+        </div>
+        <div id="sctxFilePreview" style="display:none" class="file-preview">
+          <span class="fp-icon" id="sctxFpIcon">📄</span>
+          <div class="fp-info">
+            <div class="fp-name" id="sctxFpName"></div>
+            <div class="fp-size" id="sctxFpSize"></div>
+            <div class="upload-progress" id="sctxUploadProgressBar" style="display:none">
+              <div class="upload-progress-bar" id="sctxUploadBar"></div>
+            </div>
+          </div>
+          <button class="fp-remove" onclick="sctxClearFileInput()" title="Bỏ file">×</button>
+        </div>
+        <div><label class="fl" style="margin-top:10px">Mô tả tài liệu (tùy chọn)</label>
+          <input id="sctx_p1DocDesc" class="fc" placeholder="VD: Biên bản họp tháng 3/2026…"/>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('mSCTXProg')">Hủy</button><button class="btn bp" onclick="submitSCTXProg()">💾 Lưu tiến độ</button></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Flag công trình SCTX ═══ -->
+<div class="overlay" id="mSCTXFlag">
+  <div class="modal" style="max-width:460px">
+    <div class="mh"><span style="font-size:18px">🚩</span><h3>Flag trạng thái công trình SCTX</h3><button class="mclose" onclick="closeM('mSCTXFlag')">×</button></div>
+    <div class="mb">
+      <div><label class="fl">Công trình</label><select id="sctx_p2Proj" class="fc"></select></div>
+      <div>
+        <label class="fl">Loại cập nhật <span style="color:var(--danger)">*</span></label>
+        <select id="sctx_p2FT" class="fc" onchange="onSCTXFlagChg()">
+          <option value="">– Chọn –</option>
+          <option value="VUONG_MAC">⚠️ Đánh dấu vướng mắc</option>
+          <option value="CLEAR_VUONG_MAC">✅ Xóa vướng mắc</option>
+          <option value="CHAM_TIEN_DO">🚨 Đánh dấu chậm tiến độ</option>
+          <option value="BINH_THUONG">🟢 Đặt lại bình thường</option>
+          <option value="THAY_DOI_TRANG_THAI">🔄 Chuyển trạng thái</option>
+        </select>
+      </div>
+      <div id="sctxGMoTa"><label class="fl">Mô tả / lý do</label><textarea id="sctx_p2MT" class="fc" style="min-height:65px" placeholder="Chi tiết…"></textarea></div>
+      <div id="sctxGTS" style="display:none">
+        <label class="fl">Chuyển sang trạng thái</label>
+        <select id="sctx_p2TS" class="fc">
+          <option value="P4">P04 – Đang triển khai</option>
+          <option value="P2">P02/P08 – Đang triển khai</option>
+        </select>
+      </div>
+      <div><label class="fl">Người thực hiện</label><input id="sctx_p2Nguoi" class="fc" placeholder="Họ và tên…"/></div>
+    </div>
+    <div class="mf"><button class="btn bg" onclick="closeM('mSCTXFlag')">Hủy</button><button class="btn bo" onclick="submitSCTXFlag()">🚩 Xác nhận</button></div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Tạo công trình SCTX mới ═══ -->
+<div class="overlay" id="mSCTXNewProj">
+  <div class="modal" style="max-width:580px">
+    <div class="mh"><span style="font-size:18px">🆕</span><h3>Tạo công trình SCTX mới</h3><button class="mclose" onclick="closeM('mSCTXNewProj')">×</button></div>
+    <div class="mb">
+      <div>
+        <label class="fl">Tên công trình <span style="color:var(--danger)">*</span></label>
+        <textarea id="sctx_np_ten" class="fc" style="min-height:60px" placeholder="Nhập tên đầy đủ của công trình SCTX…"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="fl">Trạng thái <span style="color:var(--danger)">*</span></label>
+          <select id="sctx_np_tt" class="fc">
+            <option value="P4">P04 – Đang triển khai</option>
+            <option value="P2">P02/P08 – Đang triển khai</option>
+          </select>
+        </div>
+        <div class="chkr" style="margin-top:25px"><input type="checkbox" id="sctx_np_cham"/><label for="sctx_np_cham">🚨 Đánh dấu chậm tiến độ</label></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="fl">Đơn vị đăng ký</label>
+          <input id="sctx_np_don_vi" class="fc" placeholder="P04, P02, TTGS…"/>
+        </div>
+        <div>
+          <label class="fl">Thời gian HT PAKTTCDT</label>
+          <input id="sctx_np_thoigian" class="fc" placeholder="Tháng 01, 02, 03…"/>
+        </div>
+      </div>
+      <div>
+        <label class="fl">Tiến độ thực hiện</label>
+        <textarea id="sctx_np_tiendo" class="fc" style="min-height:60px" placeholder="Mô tả tình trạng triển khai hiện tại…"></textarea>
+      </div>
+      <div>
+        <label class="fl">Vướng mắc</label>
+        <textarea id="sctx_np_vm" class="fc" style="min-height:55px" placeholder="Mô tả khó khăn nếu có…"></textarea>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <label class="fl">Phụ trách</label>
+          <input id="sctx_np_pt" class="fc" placeholder="Họ tên người phụ trách…"/>
+        </div>
+        <div>
+          <label class="fl">Phối hợp</label>
+          <input id="sctx_np_ph" class="fc" placeholder="Họ tên người phối hợp…"/>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('mSCTXNewProj')">Hủy</button>
+      <button class="btn bn" onclick="submitSCTXNewProject()" style="background:linear-gradient(135deg,#f59e0b,#f97316);color:#0b1929;font-weight:800;border:none">🆕 Tạo công trình</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Chi tiết công trình SCTX ═══ -->
+<div class="overlay" id="mSCTXDetail">
+  <div class="modal" style="max-width:640px">
+    <div class="mh"><span style="font-size:18px">📁</span><h3 id="sctxDetailTitle">Chi tiết công trình SCTX</h3><button class="mclose" onclick="closeM('mSCTXDetail')">×</button></div>
+    <div class="mb">
+      <div class="mtabs">
+        <button class="mtab active" onclick="switchSCTXTab('sctxDtInfo',this)">Thông tin</button>
+        <button class="mtab" onclick="switchSCTXTab('sctxDtLog',this)">📜 Lịch sử cập nhật</button>
+        <button class="mtab" onclick="switchSCTXTab('sctxDtDocs',this)">📎 Tài liệu <span id="sctxDtDocsCount" style="background:rgba(0,194,255,.2);color:var(--accent);padding:1px 6px;border-radius:10px;font-size:9px;margin-left:3px">0</span></button>
+      </div>
+      <div id="sctxDtInfo">
+        <div class="info-grid" id="sctxDetailMeta"></div>
+        <div style="margin-top:16px">
+          <label class="fl">Tiến độ hiện tại</label>
+          <div id="sctxDetailProg" style="font-size:13px;color:var(--text);line-height:1.6;background:rgba(0,0,0,.2);padding:12px;border-radius:8px;border:1px solid var(--border)"></div>
+        </div>
+        <div id="sctxDetailVM" style="margin-top:12px"></div>
+      </div>
+      <div id="sctxDtLog" style="display:none">
+        <div id="sctxProjLog" class="proj-log-list">
+          <div class="empty-state"><div class="sp"></div></div>
+        </div>
+      </div>
+      <div id="sctxDtDocs" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:11px;color:var(--muted)">Tài liệu đính kèm của công trình này</span>
+          <button class="btn bp" style="padding:5px 12px;font-size:11px" onclick="openSCTXProgressModal(curSCTXDetailId);closeM('mSCTXDetail')">+ Đính kèm tài liệu mới</button>
+        </div>
+        <div id="sctxDocList" class="doc-list"><div class="empty-state"><div class="sp"></div></div></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('mSCTXDetail')">Đóng</button>
+      <button class="btn bp" onclick="closeM('mSCTXDetail');openSCTXProgressModal(curSCTXDetailId)">✏️ Cập nhật tiến độ</button>
+      <button class="btn bw" onclick="closeM('mSCTXDetail');openSCTXFlagModal(curSCTXDetailId)">🚩 Flag</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ MODAL: Sửa Phụ trách & Phối hợp – SCL (lanh_dao only) ═══ -->
+<div class="overlay" id="mSCLEditStaff">
+  <div class="modal" style="max-width:420px">
+    <div class="mh"><span style="font-size:18px">👤</span><h3>Cập nhật Phụ trách &amp; Phối hợp</h3><button class="mclose" onclick="closeM('mSCLEditStaff')">×</button></div>
+    <div class="mb">
+      <div style="margin-bottom:10px;font-size:12px;color:var(--muted);padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px;border-left:3px solid var(--accent)" id="sclEsTitle"></div>
+      <div><label class="fl">Phụ trách (lãnh đạo / chuyên viên)</label><input id="sclEsPT" class="fc" placeholder="VD: Thành, Việt"/></div>
+      <div><label class="fl">Đơn vị phối hợp</label><input id="sclEsPH" class="fc" placeholder="VD: A. Dũng, Ngân P8"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('mSCLEditStaff')">Hủy</button>
+      <button class="btn bp" onclick="submitSCLEditStaff()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Sửa Phụ trách & Phối hợp – SCTX (lanh_dao only) ═══ -->
+<div class="overlay" id="mSCTXEditStaff">
+  <div class="modal" style="max-width:420px">
+    <div class="mh"><span style="font-size:18px">👤</span><h3>Cập nhật Phụ trách &amp; Phối hợp</h3><button class="mclose" onclick="closeM('mSCTXEditStaff')">×</button></div>
+    <div class="mb">
+      <div style="margin-bottom:10px;font-size:12px;color:var(--muted);padding:8px 12px;background:rgba(255,255,255,.04);border-radius:8px;border-left:3px solid var(--accent)" id="sctxEsTitle"></div>
+      <div><label class="fl">Phụ trách (lãnh đạo / chuyên viên)</label><input id="sctxEsPT" class="fc" placeholder="VD: Thành, Việt"/></div>
+      <div><label class="fl">Đơn vị phối hợp</label><input id="sctxEsPH" class="fc" placeholder="VD: A. Dũng, Ngân P8"/></div>
+    </div>
+    <div class="mf">
+      <button class="btn bg" onclick="closeM('mSCTXEditStaff')">Hủy</button>
+      <button class="btn bp" onclick="submitSCTXEditStaff()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
