@@ -591,7 +591,7 @@ textarea.fc{resize:vertical;min-height:80px}
 
     <!-- ── TAB DASHBOARD ── -->
     <div id="tab-dashboard" class="tab-panel active">
-      <div class="sec-h">📊 Tổng quan dự án</div>
+      <div class="sec-h">📊 Tổng quan dự án ĐTXD</div>
       <div class="kpi-grid">
         <div class="kpi-card clickable" style="--kc:var(--accent)" onclick="openKpiPopup('P2_P8')"><div class="kpi-icon">🔧</div><div class="kpi-val" id="k1">–</div><div class="kpi-lbl">Đang triển khai P02/P08</div></div>
         <div class="kpi-card clickable" style="--kc:#b08aff" onclick="openKpiPopup('P4')"><div class="kpi-icon">📋</div><div class="kpi-val" id="k2">–</div><div class="kpi-lbl">Đang triển khai P04</div></div>
@@ -600,9 +600,32 @@ textarea.fc{resize:vertical;min-height:80px}
         <div class="kpi-card clickable" style="--kc:var(--warn)" onclick="openKpiPopup('VUONG_MAC')"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="k5">–</div><div class="kpi-lbl">Có vướng mắc</div></div>
         <div class="kpi-card clickable" style="--kc:var(--danger)" onclick="openKpiPopup('CHAM')"><div class="kpi-icon">🚨</div><div class="kpi-val" id="k6">–</div><div class="kpi-lbl">Chậm tiến độ</div></div>
       </div>
-      <div class="charts-row">
+
+      <div class="sec-h">🔧 Tổng quan dự án SCL</div>
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--kc:#00c2ff"><div class="kpi-icon">🔁</div><div class="kpi-val" id="scl_k1">–</div><div class="kpi-lbl">Chuyển tiếp</div></div>
+        <div class="kpi-card" style="--kc:#b08aff"><div class="kpi-icon">📋</div><div class="kpi-val" id="scl_k2">–</div><div class="kpi-lbl">Giao KHCP</div></div>
+        <div class="kpi-card" style="--kc:#00e5b0"><div class="kpi-icon">✅</div><div class="kpi-val" id="scl_k3">–</div><div class="kpi-lbl">Thông qua</div></div>
+        <div class="kpi-card" style="--kc:#ff8050"><div class="kpi-icon">📤</div><div class="kpi-val" id="scl_k4">–</div><div class="kpi-lbl">Trình danh mục</div></div>
+        <div class="kpi-card" style="--kc:var(--warn)"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="scl_k5">–</div><div class="kpi-lbl">Có vướng mắc</div></div>
+        <div class="kpi-card" style="--kc:var(--danger)"><div class="kpi-icon">🚨</div><div class="kpi-val" id="scl_k6">–</div><div class="kpi-lbl">Chậm tiến độ</div></div>
+      </div>
+
+      <div class="sec-h">🛠 Tổng quan dự án SCTX</div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+        <div class="kpi-card" style="--kc:#f59e0b"><div class="kpi-icon">📋</div><div class="kpi-val" id="sctx_k1">–</div><div class="kpi-lbl">P04 – Triển khai</div></div>
+        <div class="kpi-card" style="--kc:#60a5fa"><div class="kpi-icon">🔧</div><div class="kpi-val" id="sctx_k2">–</div><div class="kpi-lbl">P02/P08 – Triển khai</div></div>
+        <div class="kpi-card" style="--kc:var(--warn)"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="sctx_k3">–</div><div class="kpi-lbl">Có vướng mắc</div></div>
+        <div class="kpi-card" style="--kc:var(--danger)"><div class="kpi-icon">🚨</div><div class="kpi-val" id="sctx_k4">–</div><div class="kpi-lbl">Chậm tiến độ</div></div>
+      </div>
+
+      <div class="charts-row" style="grid-template-columns:1fr 1fr">
         <div class="chart-card"><h3>Phân bổ theo trạng thái</h3><canvas id="cStatus" height="180"></canvas></div>
-        <div class="chart-card"><h3>Tình trạng thực hiện dự án</h3><canvas id="cTinhTrang" height="180"></canvas></div>
+        <div class="chart-card"><h3>Tình trạng thực hiện dự án ĐTXD</h3><canvas id="cTinhTrang" height="180"></canvas></div>
+      </div>
+      <div class="charts-row" style="grid-template-columns:1fr 1fr">
+        <div class="chart-card"><h3>Tình trạng thực hiện dự án SCL</h3><canvas id="cSCL" height="180"></canvas></div>
+        <div class="chart-card"><h3>Tình trạng thực hiện dự án SCTX</h3><canvas id="cSCTX" height="180"></canvas></div>
       </div>
       <div class="sec-h">🕐 Cập nhật gần đây</div>
       <div class="tbl-card"><div id="dashLog" class="log-list" style="max-height:280px"></div></div>
@@ -1438,7 +1461,7 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let allProjects = [], filteredProjects = [];
 let curDetailId = null, currentUser = null;
-let cStatus, cFund;
+let cStatus, cFund, cSCL, cSCTX;
 
 const ST = {
   P2_P8:          { label:'P02/P08', cls:'bp2p8', color:'#00c2ff' },
@@ -1480,6 +1503,8 @@ function showApp(){
   loadAll();
   setInterval(()=>{ document.getElementById('hTime').textContent=new Date().toLocaleTimeString('vi-VN'); },1000);
   setInterval(loadAll,60000);
+  // Pre-load SCL + SCTX for dashboard KPI cards
+  setTimeout(()=>{ loadSCL(); loadSCTX(); }, 1000);
 }
 
 // ─── LOAD DATA ────────────────────────────────────────────────────
@@ -1489,6 +1514,9 @@ async function loadAll(){
   await loadGanttFromSupabase();
   await loadData();
   await loadLog();
+  // Load SCL & SCTX for dashboard KPI + charts (non-blocking)
+  loadSCL();
+  loadSCTX();
 }
 
 async function loadData(){
@@ -1563,6 +1591,24 @@ function renderKPI(k){
   updateK6FromGantt();
 }
 
+function renderSCLKPI(data){
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('scl_k1', data.filter(p=>p.trang_thai==='CHUYEN_TIEP').length);
+  set('scl_k2', data.filter(p=>p.trang_thai==='GIAO_KHCP').length);
+  set('scl_k3', data.filter(p=>p.trang_thai==='THONG_QUA').length);
+  set('scl_k4', data.filter(p=>p.trang_thai==='TRINH_DM').length);
+  set('scl_k5', data.filter(p=>p.vuong_mac&&p.vuong_mac.trim()).length);
+  set('scl_k6', data.filter(p=>p.is_cham_tien_do).length);
+}
+
+function renderSCTXKPI(data){
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('sctx_k1', data.filter(p=>p.trang_thai==='P4').length);
+  set('sctx_k2', data.filter(p=>p.trang_thai==='P2').length);
+  set('sctx_k3', data.filter(p=>p.vuong_mac&&p.vuong_mac.trim()).length);
+  set('sctx_k4', data.filter(p=>p.is_cham_tien_do).length);
+}
+
 function updateK6FromGantt(){
   const el = document.getElementById('k6');
   if(!el) return;
@@ -1611,6 +1657,60 @@ function renderCharts(data){
   });
 }
 
+function renderSCLChart(data){
+  const tc='rgba(255,255,255,.5)', ff='Be Vietnam Pro', grid={color:'rgba(255,255,255,.05)'};
+  const cham  = data.filter(p=>p.is_cham_tien_do).length;
+  const vm    = data.filter(p=>p.vuong_mac&&p.vuong_mac.trim()).length;
+  const dung  = Math.max(0, data.length - cham);
+  if(cSCL) cSCL.destroy();
+  cSCL = new Chart(document.getElementById('cSCL'),{
+    type:'bar',
+    data:{
+      labels:['Đúng tiến độ','Chậm tiến độ','Vướng mắc'],
+      datasets:[{
+        label:'Số công trình',
+        data:[dung, cham, vm],
+        backgroundColor:['#00e5b0','#ff4f4f','#ffb347'],
+        borderRadius:8, borderWidth:0, barThickness:48,
+      }]
+    },
+    options:{
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' công trình'}} },
+      scales:{
+        x:{ticks:{color:tc,font:{family:ff,size:12,weight:'600'}},grid:{display:false}},
+        y:{ticks:{color:tc,font:{family:ff,size:11},stepSize:1},grid,beginAtZero:true}
+      }
+    }
+  });
+}
+
+function renderSCTXChart(data){
+  const tc='rgba(255,255,255,.5)', ff='Be Vietnam Pro', grid={color:'rgba(255,255,255,.05)'};
+  const cham  = data.filter(p=>p.is_cham_tien_do).length;
+  const vm    = data.filter(p=>p.vuong_mac&&p.vuong_mac.trim()).length;
+  const dung  = Math.max(0, data.length - cham);
+  if(cSCTX) cSCTX.destroy();
+  cSCTX = new Chart(document.getElementById('cSCTX'),{
+    type:'bar',
+    data:{
+      labels:['Đúng tiến độ','Chậm tiến độ','Vướng mắc'],
+      datasets:[{
+        label:'Số công trình',
+        data:[dung, cham, vm],
+        backgroundColor:['#00e5b0','#ff4f4f','#ffb347'],
+        borderRadius:8, borderWidth:0, barThickness:48,
+      }]
+    },
+    options:{
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' '+ctx.parsed.y+' công trình'}} },
+      scales:{
+        x:{ticks:{color:tc,font:{family:ff,size:12,weight:'600'}},grid:{display:false}},
+        y:{ticks:{color:tc,font:{family:ff,size:11},stepSize:1},grid,beginAtZero:true}
+      }
+    }
+  });
+}
+
 // Cập nhật bar chart sau khi Gantt load xong với dữ liệu is_completed từ Supabase
 function updateChartsFromGantt(){
   if(!cFund) return;
@@ -1632,7 +1732,7 @@ function renderTable(data){
   tb.innerHTML=data.map((p,i)=>{
     const st=ST[p.trang_thai];
     const editBtn = isLD
-      ? `<button class="ra" style="font-size:10px;padding:2px 6px;margin-left:4px;opacity:.6" onclick="openEditStaff('${p.id}')" title="Sửa phụ trách & phối hợp">🖊</button>`
+      ? `<button class="ra" style="font-size:12px;padding:3px 8px;margin-left:6px;opacity:1;background:rgba(0,194,255,.18);border:1px solid rgba(0,194,255,.45);border-radius:5px;color:#00c2ff;cursor:pointer" onclick="openEditStaff('${p.id}')" title="Sửa phụ trách & phối hợp">🖊</button>`
       : '';
     return `<tr class="${p.is_cham_tien_do?'rl':''}" style="animation:fadeUp .3s ease ${(i%15)*.025}s both">
       <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${p.stt??i+1}</td>
@@ -3063,6 +3163,7 @@ function switchTab(name,btn){
   if(name==='gantt_scl') loadGanttSclFromSupabase().then(()=>renderGanttScl());
   if(name==='log') loadLog();
   if(name==='scl') loadSCL();
+  if(name==='dashboard'){ if(allSCL.length) { renderSCLKPI(allSCL); renderSCLChart(allSCL); } else loadSCL(); if(allSCTX.length) { renderSCTXKPI(allSCTX); renderSCTXChart(allSCTX); } else loadSCTX(); }
   if(name==='sctx') loadSCTX();
 }
 function switchMTab(id,btn){
@@ -3600,6 +3701,8 @@ async function loadSCL(){
     renderSCLTable(allSCL);
     populateSCLCVFilter(allSCL);
     populateSCLProjSel(allSCL);
+    renderSCLKPI(allSCL);
+    if(typeof renderSCLChart === 'function') renderSCLChart(allSCL);
   } catch(e){
     console.warn('loadSCL error:', e.message);
     toast('❌ Lỗi tải dữ liệu SCL: '+e.message,'err');
@@ -3622,7 +3725,7 @@ function renderSCLTable(data){
     const st = SCL_ST[p.trang_thai];
 
     const editBtn = isLD
-      ? `<button class="ra" style="font-size:10px;padding:2px 6px;margin-left:4px;opacity:.6" onclick="openSCLEditStaff('${p.id}')" title="Sửa phụ trách & phối hợp">🖊</button>`
+      ? `<button class="ra" style="font-size:12px;padding:3px 8px;margin-left:6px;opacity:1;background:rgba(0,194,255,.18);border:1px solid rgba(0,194,255,.45);border-radius:5px;color:#00c2ff;cursor:pointer" onclick="openSCLEditStaff('${p.id}')" title="Sửa phụ trách & phối hợp">🖊</button>`
       : '';
     return `<tr class="${p.is_cham_tien_do?'rl':''}" style="animation:fadeUp .3s ease ${(i%15)*.025}s both">
       <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${p.stt??i+1}</td>
@@ -4115,8 +4218,8 @@ async function deleteSCLDoc(docId, storagePath){
 // ══════════════════════════════════════════════════════════════════
 
 const SCTX_ST = {
-  P4: { label:'P04', cls:'bdtms',  color:'#f59e0b' },
-  P2: { label:'P02/P08', cls:'bdtxd', color:'#60a5fa' },
+  P4: { label:'P04 – Triển khai', cls:'bdtms',  color:'#f59e0b' },
+  P2: { label:'P02/P08 – Triển khai', cls:'bdtxd', color:'#60a5fa' },
 };
 
 let allSCTX = [], filteredSCTX = [];
@@ -4134,6 +4237,8 @@ async function loadSCTX(){
     renderSCTXTable(allSCTX);
     populateSCTXCVFilter(allSCTX);
     populateSCTXProjSel(allSCTX);
+    renderSCTXKPI(allSCTX);
+    if(typeof renderSCTXChart === 'function') renderSCTXChart(allSCTX);
   } catch(e){
     console.warn('loadSCTX error:', e.message);
     toast('❌ Lỗi tải dữ liệu SCTX: '+e.message,'err');
@@ -4154,7 +4259,7 @@ function renderSCTXTable(data){
   tb.innerHTML = data.map((p,i) => {
     const st = SCTX_ST[p.trang_thai];
     const editBtn = isLD
-      ? `<button class="ra" style="font-size:10px;padding:2px 6px;margin-left:4px;opacity:.6" onclick="openSCTXEditStaff('${p.id}')" title="Sửa phụ trách & phối hợp">🖊</button>`
+      ? `<button class="ra" style="font-size:12px;padding:3px 8px;margin-left:6px;opacity:1;background:rgba(0,194,255,.18);border:1px solid rgba(0,194,255,.45);border-radius:5px;color:#00c2ff;cursor:pointer" onclick="openSCTXEditStaff('${p.id}')" title="Sửa phụ trách & phối hợp">🖊</button>`
       : '';
     // Badge màu theo nhóm P4/P2
     const stBadge = st
