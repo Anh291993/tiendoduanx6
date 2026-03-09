@@ -1126,6 +1126,7 @@ textarea.fc{resize:vertical;min-height:80px}
     <span style="font-size:20px" id="dvIcon">📄</span>
     <h3 id="dvTitle">Tài liệu</h3>
     <div class="dv-actions">
+      <a id="dvOpenDrive" href="#" target="_blank" class="btn" style="font-size:11px;padding:5px 14px;text-decoration:none;background:rgba(66,133,244,.2);color:#4285f4;border:1px solid rgba(66,133,244,.4);display:none">🔗 Mở Drive</a>
       <a id="dvDownload" href="#" target="_blank" class="btn bs" style="font-size:11px;padding:5px 14px;text-decoration:none">⬇ Tải về</a>
       <button class="dv-close" onclick="closeDocViewer()">✕ Đóng</button>
     </div>
@@ -1287,16 +1288,16 @@ textarea.fc{resize:vertical;min-height:80px}
       <div class="chkr"><input type="checkbox" id="scl_p1Cham"/><label for="scl_p1Cham">🚨 Đánh dấu <strong>chậm tiến độ</strong></label></div>
       <div><label class="fl">Người cập nhật</label><input id="scl_p1Nguoi" class="fc" placeholder="VD: Vũ Xuân Thi, Đinh Anh Dũng…"/></div>
       <div>
-        <label class="fl">📎 Tài liệu đính kèm (PDF hoặc Word, tối đa 20MB)</label>
+        <label class="fl" id="sclUploadLabel">📎 Tài liệu đính kèm (PDF, Word hoặc Excel, tối đa 20MB)</label>
         <div class="upload-zone" id="sclUploadZone" onclick="document.getElementById('sclFileInput').click()"
           ondragover="event.preventDefault();this.classList.add('drag')"
           ondragleave="this.classList.remove('drag')"
           ondrop="event.preventDefault();this.classList.remove('drag');sclHandleFileDrop(event)">
-          <input type="file" id="sclFileInput" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          <input type="file" id="sclFileInput" accept=".pdf,.doc,.docx,.xlsx,.xls,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             onchange="sclHandleFileSelect(event)"/>
           <div class="uz-icon">📄</div>
           <div class="uz-label">Kéo thả file vào đây hoặc <strong>nhấn để chọn</strong></div>
-          <div class="uz-hint">Hỗ trợ: PDF, DOC, DOCX · Tối đa 20MB</div>
+          <div class="uz-hint" id="sclUploadHint">Hỗ trợ: PDF, DOC, DOCX, XLSX · Tối đa 20MB</div>
         </div>
         <div id="sclFilePreview" style="display:none" class="file-preview">
           <span class="fp-icon" id="sclFpIcon">📄</span>
@@ -1453,6 +1454,7 @@ const WH3 = 'https://your-n8n/webhook/lay-du-lieu';         // #3 – Lấy dữ
 const WH4 = 'https://your-n8n/webhook/kiem-tra-cham';      // #4 – Kiểm tra & gửi thông báo (mới)
 const WH5 = 'https://n8nhome.chatpro.io.vn/webhook/canh-bao-phan-ky';      // #5 – Cảnh báo cột mốc phân kỳ gần đến hạn
 const WH6 = 'https://n8nhome.chatpro.io.vn/webhook/luu-phan-ky-gantt';    // #6 – Lưu/cập nhật cột mốc Gantt → Supabase
+const WH_GDRIVE = 'https://n8nhome.chatpro.io.vn/webhook/upload-document'; // #7 – Upload file lớn → Google Drive
 
 // ══════════════════════════════════════════════════════════════════════
 
@@ -1500,6 +1502,7 @@ function showApp(){
   const isLanhDao = name === 'lanh_dao' || (currentUser?.email||'').includes('lanh_dao');
   document.getElementById('chatFab').style.display = isLanhDao ? 'flex' : 'none';
   initTheme();
+  initUploadLabels();
   loadAll();
   setInterval(()=>{ document.getElementById('hTime').textContent=new Date().toLocaleTimeString('vi-VN'); },1000);
   setInterval(loadAll,60000);
@@ -2810,25 +2813,57 @@ async function checkAndSendAlerts(){
 // ─── ACTIVITY LOG ─────────────────────────────────────────────────
 async function loadLog(){
   try{
-    const {data,error}=await db.from('progress_logs')
-      .select('*, projects(ten_cong_trinh,trang_thai)')
-      .order('ngay_cap_nhat',{ascending:false}).limit(80);
-    if(error) throw error;
-    renderSysLog(data); renderDashLog(data); renderLogStats(data);
+    const [r1, r2, r3] = await Promise.all([
+      db.from('progress_logs')
+        .select('*, projects(ten_cong_trinh,trang_thai)')
+        .order('ngay_cap_nhat',{ascending:false}).limit(80),
+      db.from('progress_logs_scl')
+        .select('*, scl_projects(ten_cong_trinh,trang_thai)')
+        .order('ngay_cap_nhat',{ascending:false}).limit(80),
+      db.from('progress_logs_sctx')
+        .select('*, sctx_projects(ten_cong_trinh,trang_thai)')
+        .order('ngay_cap_nhat',{ascending:false}).limit(80),
+    ]);
+    const dtxd = (r1.data||[]).map(l=>({...l, _src:'ĐTXD', _proj: l.projects?.ten_cong_trinh, _st: l.projects?.trang_thai}));
+    const scl  = (r2.data||[]).map(l=>({...l, _src:'SCL',  _proj: l.scl_projects?.ten_cong_trinh,  _st: l.scl_projects?.trang_thai}));
+    const sctx = (r3.data||[]).map(l=>({...l, _src:'SCTX', _proj: l.sctx_projects?.ten_cong_trinh, _st: l.sctx_projects?.trang_thai}));
+    const all = [...dtxd, ...scl, ...sctx]
+      .sort((a,b)=>new Date(b.ngay_cap_nhat)-new Date(a.ngay_cap_nhat))
+      .slice(0,120);
+    renderSysLog(all); renderDashLog(all); renderLogStats(all);
   } catch(e){ console.error(e); }
 }
 
+const SRC_BADGE = {
+  'ĐTXD': 'background:rgba(0,194,255,.18);color:#00c2ff;border:1px solid rgba(0,194,255,.35)',
+  'SCL':  'background:rgba(100,180,255,.15);color:#64b4ff;border:1px solid rgba(100,180,255,.3)',
+  'SCTX': 'background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)',
+};
+const LOG_SCL_ST  = {CHUYEN_TIEP:{label:'Chuyển tiếp',cls:'bs'}, GIAO_KHCP:{label:'Giao KHCP',cls:'bp'}, THONG_QUA:{label:'Thông qua',cls:'bo'}, TRINH_DM:{label:'Trình DM',cls:'br'}};
+const LOG_SCTX_ST = {P4:{label:'P04',cls:'bo'}, P2:{label:'P02/P08',cls:'bp'}};
 function logItem(l){
-  const name=l.projects?.ten_cong_trinh||'Dự án không xác định';
-  const nm=name.length>55?name.substring(0,55)+'…':name;
-  const av=(l.nguoi_cap_nhat||'?')[0].toUpperCase();
-  const t=l.ngay_cap_nhat?new Date(l.ngay_cap_nhat).toLocaleString('vi-VN'):'';
-  const st=l.projects?.trang_thai;
+  const src  = l._src || 'ĐTXD';
+  const name = l._proj || l.projects?.ten_cong_trinh || 'Dự án không xác định';
+  const nm   = name.length>55 ? name.substring(0,55)+'…' : name;
+  const av   = (l.nguoi_cap_nhat||'?')[0].toUpperCase();
+  const t    = l.ngay_cap_nhat ? new Date(l.ngay_cap_nhat).toLocaleString('vi-VN') : '';
+  const stCode = l._st || l.projects?.trang_thai;
+  let stBadge = '';
+  if(src==='ĐTXD' && stCode && ST[stCode])
+    stBadge = `<span class="badge ${ST[stCode].cls}" style="font-size:8px">${ST[stCode].label}</span>`;
+  else if(src==='SCL' && stCode && LOG_SCL_ST[stCode])
+    stBadge = `<span class="badge bs" style="font-size:8px">${LOG_SCL_ST[stCode].label}</span>`;
+  else if(src==='SCTX' && stCode && LOG_SCTX_ST[stCode])
+    stBadge = `<span class="badge bo" style="font-size:8px">${LOG_SCTX_ST[stCode].label}</span>`;
+  const srcBs = SRC_BADGE[src] || SRC_BADGE['ĐTXD'];
   return `<div class="log-item">
     <div class="li-top">
       <div class="li-av">${av}</div>
       <div class="li-body">
-        <div class="li-proj">${nm} ${st&&ST[st]?`<span class="badge ${ST[st].cls}" style="font-size:8px">${ST[st].label}</span>`:''}</div>
+        <div class="li-proj">
+          <span style="font-size:9px;padding:1px 6px;border-radius:4px;font-weight:700;margin-right:5px;${srcBs}">${src}</span>
+          ${nm} ${stBadge}
+        </div>
         <div class="li-text">${l.noi_dung_tien_do||'–'}</div>
         <div class="li-meta"><span>👤 ${l.nguoi_cap_nhat||'Hệ thống'}</span><span>🕐 ${t}</span></div>
       </div>
@@ -2844,8 +2879,19 @@ function renderSysLog(logs){
 function renderDashLog(logs){
   const el=document.getElementById('dashLog'); if(!el) return;
   if(!logs){
-    db.from('progress_logs').select('*, projects(ten_cong_trinh)').order('ngay_cap_nhat',{ascending:false}).limit(8)
-      .then(({data})=>{ if(data) el.innerHTML=data.map(l=>logItem(l)).join(''); });
+    // Fetch from all 3 tables and merge
+    Promise.all([
+      db.from('progress_logs').select('*, projects(ten_cong_trinh,trang_thai)').order('ngay_cap_nhat',{ascending:false}).limit(20),
+      db.from('progress_logs_scl').select('*, scl_projects(ten_cong_trinh,trang_thai)').order('ngay_cap_nhat',{ascending:false}).limit(20),
+      db.from('progress_logs_sctx').select('*, sctx_projects(ten_cong_trinh,trang_thai)').order('ngay_cap_nhat',{ascending:false}).limit(20),
+    ]).then(([r1,r2,r3])=>{
+      const merged=[
+        ...(r1.data||[]).map(l=>({...l,_src:'ĐTXD',_proj:l.projects?.ten_cong_trinh,_st:l.projects?.trang_thai})),
+        ...(r2.data||[]).map(l=>({...l,_src:'SCL', _proj:l.scl_projects?.ten_cong_trinh, _st:l.scl_projects?.trang_thai})),
+        ...(r3.data||[]).map(l=>({...l,_src:'SCTX',_proj:l.sctx_projects?.ten_cong_trinh,_st:l.sctx_projects?.trang_thai})),
+      ].sort((a,b)=>new Date(b.ngay_cap_nhat)-new Date(a.ngay_cap_nhat)).slice(0,8);
+      el.innerHTML=merged.map(l=>logItem(l)).join('');
+    });
     return;
   }
   el.innerHTML=logs.slice(0,8).map(l=>logItem(l)).join('');
@@ -3302,7 +3348,7 @@ async function loadProjDocs(id){
       </div>
       <div class="doc-item-actions">
         <button class="doc-btn" onclick="viewDoc('${doc.public_url}','${doc.ten_tai_lieu||doc.ten_file}','${doc.loai_file}')">👁 Xem</button>
-        <a class="doc-btn" href="${doc.public_url}" target="_blank" download="${doc.ten_file}">⬇ Tải</a>
+        <a class="doc-btn" href="${doc.public_url.includes('drive.google.com')?doc.public_url.replace('/view','/view?usp=sharing'):doc.public_url}" target="_blank">⬇ Tải</a>
         <button class="doc-btn del" onclick="deleteDoc('${doc.id}','${doc.storage_path}')">🗑</button>
       </div>
     </div>`;
@@ -3311,19 +3357,122 @@ async function loadProjDocs(id){
 
 // ─── DOCUMENT VIEWER ─────────────────────────────────────────────
 function viewDoc(url, name, ext){
-  document.getElementById('dvIcon').textContent  = ext==='pdf'?'📕':'📘';
+  const iconMap = {'pdf':'📕','xlsx':'📊','xls':'📊','doc':'📘','docx':'📘'};
+  document.getElementById('dvIcon').textContent  = iconMap[ext]||'📄';
   document.getElementById('dvTitle').textContent = name;
-  document.getElementById('dvDownload').href     = url;
   const body = document.getElementById('dvBody');
-  if(ext==='pdf'){
-    body.innerHTML = `<iframe src="${url}#toolbar=1&navpanes=1" title="${name}"></iframe>`;
+
+  // ── Google Drive files ──────────────────────────────────────────
+  const isGDrive = url && (url.includes('drive.google.com/file/d/') || url.startsWith('gdrive://'));
+  if(isGDrive){
+    // Trích file_id từ URL hoặc từ gdrive:// path
+    let fileId = null;
+    if(url.startsWith('gdrive://')){ fileId = url.replace('gdrive://',''); }
+    else {
+      const m = url.match(/\/file\/d\/([^/?]+)/);
+      fileId = m ? m[1] : null;
+    }
+    // Nếu fileId là "anyone" (lỗi N8N cũ) → không thể mở
+    if(!fileId || fileId === 'anyone' || fileId.length < 10){
+      body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text)">
+        <div style="font-size:48px">⚠️</div>
+        <div style="font-size:15px;font-weight:600;color:var(--warn)">URL file không hợp lệ</div>
+        <div style="font-size:12px;color:var(--muted);text-align:center;max-width:360px">
+          File ID bị lưu sai ("${fileId}"). Nguyên nhân: Respond node trong N8N đang lấy ID từ node Share thay vì node Upload.<br><br>
+          <strong>Cách sửa:</strong> Xem hướng dẫn bên dưới.
+        </div>
+        <div style="background:rgba(0,194,255,.08);border:1px solid rgba(0,194,255,.2);border-radius:8px;padding:12px 20px;font-size:11px;font-family:monospace;color:var(--accent);max-width:420px;line-height:1.8">
+          Trong N8N → Respond node → responseBody:<br>
+          Đổi <code>$json.id</code> thành<br>
+          <code>${'$'}('Upload lên Google Drive').item.json.id</code>
+        </div>
+      </div>`;
+      document.getElementById('docViewer').classList.add('open');
+      document.body.style.overflow='hidden';
+      return;
+    }
+
+    const previewUrl  = `https://drive.google.com/file/d/${fileId}/preview`;
+    const directUrl   = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+    const downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+
+    // Update download button
+    document.getElementById('dvDownload').href = downloadUrl;
+
+    // Show Drive button in header
+    const hdrDrive = document.getElementById('dvOpenDrive');
+    if(hdrDrive){ hdrDrive.href = directUrl; hdrDrive.style.display='inline-flex'; }
+
+    // Build viewer with iframe + fallback button
+    body.innerHTML = `
+      <iframe id="gdrive-iframe"
+        src="${previewUrl}"
+        style="border:0;width:100%;height:100%;min-height:500px;border-radius:8px"
+        allow="autoplay"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        onload="checkGDriveIframe(this)"
+      ></iframe>
+      <div id="gdrive-fallback" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:16px;color:var(--text)">
+        <div style="font-size:48px">☁️</div>
+        <div style="font-size:15px;font-weight:600">Không thể xem trực tiếp trong trình duyệt</div>
+        <div style="font-size:12px;color:var(--muted);text-align:center;max-width:320px">
+          Google Drive hạn chế nhúng iframe.<br>Mở file trong tab mới để xem đầy đủ.
+        </div>
+        <div style="display:flex;gap:10px;margin-top:8px">
+          <a href="${directUrl}" target="_blank" class="btn bg" style="text-decoration:none;padding:8px 20px;font-size:13px">
+            🔗 Mở trong Drive
+          </a>
+          <a href="${downloadUrl}" target="_blank" class="btn bs" style="text-decoration:none;padding:8px 20px;font-size:13px">
+            ⬇ Tải file về
+          </a>
+        </div>
+      </div>`;
+
+    // Show fallback if iframe blocked after 4s
+    setTimeout(()=>{
+      const iframe = document.getElementById('gdrive-iframe');
+      if(!iframe) return;
+      try{
+        // If iframe is blocked, contentDocument will be null or throw
+        const doc = iframe.contentDocument || iframe.contentWindow?.document;
+        if(!doc || doc.title==='') showGDriveFallback();
+      } catch(e){ showGDriveFallback(); }
+    }, 4000);
+
+  } else if(ext==='pdf'){
+    // Supabase Storage PDF
+    document.getElementById('dvDownload').href = url;
+    const hdrDrive2 = document.getElementById('dvOpenDrive');
+    if(hdrDrive2) hdrDrive2.style.display='none';
+    body.innerHTML = `<iframe src="${url}#toolbar=1&navpanes=1" style="border:0;width:100%;height:100%;border-radius:8px" title="${name}"></iframe>`;
   } else {
-    // Word: dùng Microsoft Office Online viewer
+    // Supabase Storage Office files → Microsoft Online Viewer
+    document.getElementById('dvDownload').href = url;
+    const hdrDrive3 = document.getElementById('dvOpenDrive');
+    if(hdrDrive3) hdrDrive3.style.display='none';
     const encoded = encodeURIComponent(url);
-    body.innerHTML = `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encoded}" title="${name}"></iframe>`;
+    body.innerHTML = `<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${encoded}" style="border:0;width:100%;height:100%;border-radius:8px" title="${name}"></iframe>`;
   }
+
   document.getElementById('docViewer').classList.add('open');
   document.body.style.overflow='hidden';
+}
+
+function showGDriveFallback(){
+  const iframe = document.getElementById('gdrive-iframe');
+  const fb     = document.getElementById('gdrive-fallback');
+  if(iframe) iframe.style.display='none';
+  if(fb)     fb.style.display='flex';
+}
+
+function checkGDriveIframe(el){
+  // After load - if title is Google's error page, show fallback
+  try{
+    const doc = el.contentDocument || el.contentWindow?.document;
+    if(doc && (doc.title.includes('Error')||doc.title.includes('lỗi')||doc.body?.innerHTML?.includes('does not exist'))){
+      showGDriveFallback();
+    }
+  } catch(e){ /* cross-origin, likely loaded OK */ }
 }
 
 function closeDocViewer(){
@@ -3454,6 +3603,24 @@ function toggleTheme(){
   document.getElementById('themeToggleBtn').textContent = isLight ? '🌙' : '☀️';
   document.getElementById('themeToggleBtn').title = isLight ? 'Chuyển sang nền tối' : 'Chuyển sang nền sáng';
 }
+// ─── Cập nhật label upload theo cấu hình GDrive ──────────────────
+function initUploadLabels(){
+  const useGDrive = WH_GDRIVE && !WH_GDRIVE.includes('your-n8n');
+  const limitText = useGDrive ? '500MB (Google Drive)' : '20MB';
+  const hintText  = useGDrive
+    ? 'Hỗ trợ: PDF, DOC, DOCX, XLSX · Tối đa 500MB (qua Google Drive)'
+    : 'Hỗ trợ: PDF, DOC, DOCX, XLSX · Tối đa 20MB';
+  const labelText = useGDrive
+    ? `📎 Tài liệu đính kèm (PDF, Word hoặc Excel, tối đa 500MB)`
+    : `📎 Tài liệu đính kèm (PDF, Word hoặc Excel, tối đa 20MB)`;
+  ['scl','sctx'].forEach(p => {
+    const lbl  = document.getElementById(`${p}UploadLabel`);
+    const hint = document.getElementById(`${p}UploadHint`);
+    if(lbl)  lbl.textContent  = labelText;
+    if(hint) hint.textContent = hintText;
+  });
+}
+
 function initTheme(){
   const saved = localStorage.getItem('theme');
   if(saved === 'light'){
@@ -3887,9 +4054,10 @@ async function submitSCLProg(){
     if(selectedSCLFile){
       try{
         toast('⏫ Đang upload tài liệu…','ok');
-        const { path, publicUrl, ext } = await uploadSCLFileToStorage(selectedSCLFile, id);
+        const { path, publicUrl, ext, via } = await uploadSCLFileToStorage(selectedSCLFile, id);
         const desc = document.getElementById('scl_p1DocDesc').value.trim();
-        await db.from('document').insert({
+        // App tự insert metadata vào document_scl (bất kể GDrive hay Supabase Storage)
+        const { error: docErr } = await db.from('document_scl').insert({
           project_id:   id,
           ten_tai_lieu: desc || selectedSCLFile.name.replace(/\.[^.]+$/,''),
           ten_file:     selectedSCLFile.name,
@@ -3901,6 +4069,7 @@ async function submitSCLProg(){
           mo_ta:        desc||null,
           ngay_upload:  new Date().toISOString()
         });
+        if(docErr) throw new Error('Lưu metadata thất bại: '+docErr.message);
         toast('📎 Đã đính kèm tài liệu thành công!','ok');
         sclClearFileInput();
       } catch(uploadErr){
@@ -4117,10 +4286,13 @@ function sclHandleFileDrop(e){ sclSetFile(e.dataTransfer.files[0]); }
 function sclSetFile(file){
   if(!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
-  if(!['pdf','doc','docx'].includes(ext)){ toast('Chỉ hỗ trợ PDF, DOC, DOCX','warn'); return; }
-  if(file.size > MAX_FILE_MB*1024*1024){ toast('File quá lớn (tối đa '+MAX_FILE_MB+'MB)','warn'); return; }
+  if(!['pdf','doc','docx','xlsx','xls'].includes(ext)){ toast('Chỉ hỗ trợ PDF, DOC, DOCX, XLSX','warn'); return; }
+  const useGDrive = WH_GDRIVE && !WH_GDRIVE.includes('your-n8n');
+  const limitMB   = useGDrive ? 500 : MAX_FILE_MB;
+  if(file.size > limitMB*1024*1024){ toast(`File quá lớn (tối đa ${limitMB}MB)`,'warn'); return; }
   selectedSCLFile = file;
-  document.getElementById('sclFpIcon').textContent  = ext==='pdf'?'📕':'📘';
+  const iconMap={'pdf':'📕','xlsx':'📊','xls':'📊'};
+  document.getElementById('sclFpIcon').textContent  = iconMap[ext]||'📘';
   document.getElementById('sclFpName').textContent  = file.name;
   document.getElementById('sclFpSize').textContent  = formatBytes(file.size);
   document.getElementById('sclFilePreview').style.display = 'flex';
@@ -4139,24 +4311,71 @@ async function uploadSCLFileToStorage(file, projectId){
   const ext  = file.name.split('.').pop().toLowerCase();
   const ts   = Date.now();
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-  const storagePath = `${projectId}/${ts}_${safe}`;
   const bar  = document.getElementById('sclUploadBar');
   const barW = document.getElementById('sclUploadProgressBar');
   barW.style.display = 'block'; bar.style.width = '15%';
+  const mimeMap = {'pdf':'application/pdf','docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','xls':'application/vnd.ms-excel','doc':'application/msword'};
+  const mimeType = mimeMap[ext] || 'application/octet-stream';
+
+  // ── Nếu đã cấu hình WH_GDRIVE → upload qua N8N lên Google Drive (multipart) ──
+  if(WH_GDRIVE && !WH_GDRIVE.includes('your-n8n')){
+    bar.style.width = '20%';
+    const fd = new FormData();
+    fd.append('file',         file, `${ts}_${safe}`);
+    fd.append('project_id',   projectId);
+    fd.append('file_name',    `${ts}_${safe}`);
+    fd.append('file_ext',     ext);
+    fd.append('mime_type',    mimeType);
+    fd.append('file_size',    String(file.size));
+    fd.append('doc_desc',     document.getElementById('scl_p1DocDesc')?.value?.trim() || '');
+    fd.append('nguoi_upload', document.getElementById('scl_p1Nguoi')?.value?.trim() || currentUser?.email?.split('@')[0] || 'Người dùng');
+    bar.style.width = '40%';
+    const ctrl = new AbortController();
+    const tid  = setTimeout(()=>ctrl.abort(), 300000); // 5 phút timeout
+    try{
+      const resp = await fetch(WH_GDRIVE, { method:'POST', body: fd, signal: ctrl.signal });
+      clearTimeout(tid);
+      bar.style.width = '90%';
+      if(!resp.ok){ const t=await resp.text(); throw new Error('GDrive upload lỗi '+resp.status+': '+t); }
+      let json;
+      try{ json = await resp.json(); } catch(e){ throw new Error('GDrive phản hồi không hợp lệ. Kiểm tra workflow N8N.'); }
+      if(!json.success) throw new Error(json.error || 'GDrive upload thất bại');
+      bar.style.width = '100%';
+      // Validate file_id (không được là "anyone" - đó là permission ID, không phải file ID)
+      let realFileId = json.file_id;
+      if(!realFileId || realFileId === 'anyone' || realFileId.length < 10){
+        // Thử trích từ drive_url nếu có
+        const mm = (json.drive_url||'').match(/\/file\/d\/([^/?]+)/);
+        realFileId = mm ? mm[1] : null;
+      }
+      if(!realFileId || realFileId === 'anyone'){
+        throw new Error('N8N trả về file_id không hợp lệ ("'+json.file_id+'"). Hãy sửa Respond node trong N8N để dùng Upload node\'s file ID.');
+      }
+      const correctedUrl = `https://drive.google.com/file/d/${realFileId}/view?usp=sharing`;
+      return { path: 'gdrive://'+realFileId, publicUrl: correctedUrl, ext, via: 'gdrive',
+               fileName: `${ts}_${safe}` };
+    } catch(err){
+      clearTimeout(tid);
+      if(err.name==='AbortError') throw new Error('Upload timeout (>5 phút). File quá lớn hoặc mạng chậm.');
+      throw err;
+    }
+  }
+
+  // ── Fallback: Supabase Storage ──────────────────────────────────
+  const storagePath = `${projectId}/${ts}_${safe}`;
   const { data: sessionData } = await db.auth.getSession();
   const token = sessionData?.session?.access_token || SUPABASE_KEY;
-  const mimeType = ext==='pdf'?'application/pdf':ext==='docx'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/msword';
   const uploadUrl = `${SUPABASE_URL}/storage/v1/object/document/${storagePath}`;
   bar.style.width = '30%';
   const uploadResp = await fetch(uploadUrl, {
-    method:'POST',
-    headers:{ 'Authorization':`Bearer ${token}`, 'apikey':SUPABASE_KEY, 'Content-Type':mimeType, 'x-upsert':'false', 'Cache-Control':'3600' },
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_KEY, 'Content-Type': mimeType, 'x-upsert': 'false', 'Cache-Control': '3600' },
     body: file
   });
   bar.style.width = '80%';
   if(!uploadResp.ok){
-    let errMsg=`HTTP ${uploadResp.status}`;
-    try{ const j=await uploadResp.json(); errMsg=j.message||j.error||errMsg; }catch(e){}
+    let errMsg = `HTTP ${uploadResp.status}`;
+    try{ const j = await uploadResp.json(); errMsg = j.message||j.error||errMsg; }catch(e){}
     throw new Error('Upload Storage lỗi: '+errMsg);
   }
   const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/document/${storagePath}`;
@@ -4170,7 +4389,7 @@ async function loadSCLProjDocs(id){
   const countEl = document.getElementById('sclDtDocsCount');
   if(!listEl) return;
   listEl.innerHTML = '<div class="empty-state"><div class="sp"></div></div>';
-  const { data, error } = await db.from('document')
+  const { data, error } = await db.from('document_scl')
     .select('*').eq('project_id', id)
     .order('ngay_upload', { ascending: false });
   if(error){ listEl.innerHTML='<div class="empty-state">Lỗi tải tài liệu</div>'; return; }
@@ -4178,7 +4397,8 @@ async function loadSCLProjDocs(id){
   if(!data||!data.length){ listEl.innerHTML='<div class="empty-state" style="padding:32px">📭 Chưa có tài liệu nào được đính kèm</div>'; return; }
   listEl.innerHTML = data.map(doc => {
     const ext  = doc.loai_file||'pdf';
-    const icon = ext==='pdf'?'📕':'📘';
+    const iconM={'pdf':'📕','xlsx':'📊','xls':'📊'};
+    const icon = iconM[ext]||'📘';
     const date = doc.ngay_upload ? new Date(doc.ngay_upload).toLocaleString('vi-VN') : '–';
     const size = doc.kich_thuoc  ? formatBytes(doc.kich_thuoc) : '';
     return `<div class="doc-item">
@@ -4195,7 +4415,7 @@ async function loadSCLProjDocs(id){
       </div>
       <div class="doc-item-actions">
         <button class="doc-btn" onclick="viewDoc('${doc.public_url}','${doc.ten_tai_lieu||doc.ten_file}','${doc.loai_file}')">👁 Xem</button>
-        <a class="doc-btn" href="${doc.public_url}" target="_blank" download="${doc.ten_file}">⬇ Tải</a>
+        <a class="doc-btn" href="${doc.public_url.includes('drive.google.com')?doc.public_url.replace('/view','/view?usp=sharing'):doc.public_url}" target="_blank">⬇ Tải</a>
         <button class="doc-btn del" onclick="deleteSCLDoc('${doc.id}','${doc.storage_path}')">🗑</button>
       </div>
     </div>`;
@@ -4205,8 +4425,8 @@ async function loadSCLProjDocs(id){
 async function deleteSCLDoc(docId, storagePath){
   if(!confirm('Xác nhận xoá tài liệu này?')) return;
   try{
-    await db.storage.from('document').remove([storagePath]);
-    await db.from('document').delete().eq('id', docId);
+    if(!storagePath.startsWith('gdrive://')) await db.storage.from('document').remove([storagePath]);
+    await db.from('document_scl').delete().eq('id', docId);
     toast('🗑 Đã xoá tài liệu','ok');
     const p = allSCL.find(x=>String(x.id)===String(curSCLDetailId));
     if(p) await loadSCLProjDocs(curSCLDetailId);
@@ -4218,8 +4438,8 @@ async function deleteSCLDoc(docId, storagePath){
 // ══════════════════════════════════════════════════════════════════
 
 const SCTX_ST = {
-  P4: { label:'P04', cls:'bdtms',  color:'#f59e0b' },
-  P2: { label:'P02/P08', cls:'bdtxd', color:'#60a5fa' },
+  P4: { label:'P04 – Triển khai', cls:'bdtms',  color:'#f59e0b' },
+  P2: { label:'P02/P08 – Triển khai', cls:'bdtxd', color:'#60a5fa' },
 };
 
 let allSCTX = [], filteredSCTX = [];
@@ -4433,9 +4653,10 @@ async function submitSCTXProg(){
     if(selectedSCTXFile){
       try{
         toast('⏫ Đang upload tài liệu…','ok');
-        const { path, publicUrl, ext } = await uploadSCTXFileToStorage(selectedSCTXFile, id);
+        const { path, publicUrl, ext, via } = await uploadSCTXFileToStorage(selectedSCTXFile, id);
         const desc = document.getElementById('sctx_p1DocDesc').value.trim();
-        await db.from('document').insert({
+        // App tự insert metadata vào document_sctx
+        const { error: docErr } = await db.from('document_sctx').insert({
           project_id:   id,
           ten_tai_lieu: desc || selectedSCTXFile.name.replace(/\.[^.]+$/,''),
           ten_file:     selectedSCTXFile.name,
@@ -4447,6 +4668,7 @@ async function submitSCTXProg(){
           mo_ta:        desc||null,
           ngay_upload:  new Date().toISOString()
         });
+        if(docErr) throw new Error('Lưu metadata thất bại: '+docErr.message);
         toast('📎 Đã đính kèm tài liệu thành công!','ok');
         sctxClearFileInput();
       } catch(uploadErr){
@@ -4536,10 +4758,13 @@ function sctxHandleFileDrop(e){ sctxSetFile(e.dataTransfer.files[0]); }
 function sctxSetFile(file){
   if(!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
-  if(!['pdf','doc','docx'].includes(ext)){ toast('Chỉ hỗ trợ PDF, DOC, DOCX','warn'); return; }
-  if(file.size > MAX_FILE_MB*1024*1024){ toast('File quá lớn (tối đa '+MAX_FILE_MB+'MB)','warn'); return; }
+  if(!['pdf','doc','docx','xlsx','xls'].includes(ext)){ toast('Chỉ hỗ trợ PDF, DOC, DOCX, XLSX','warn'); return; }
+  const useGDrive = WH_GDRIVE && !WH_GDRIVE.includes('your-n8n');
+  const limitMB   = useGDrive ? 500 : MAX_FILE_MB;
+  if(file.size > limitMB*1024*1024){ toast(`File quá lớn (tối đa ${limitMB}MB)`,'warn'); return; }
   selectedSCTXFile = file;
-  document.getElementById('sctxFpIcon').textContent  = ext==='pdf'?'📕':'📘';
+  const iconMapS={'pdf':'📕','xlsx':'📊','xls':'📊'};
+  document.getElementById('sctxFpIcon').textContent  = iconMapS[ext]||'📘';
   document.getElementById('sctxFpName').textContent  = file.name;
   document.getElementById('sctxFpSize').textContent  = formatBytes(file.size);
   document.getElementById('sctxFilePreview').style.display = 'flex';
@@ -4558,24 +4783,69 @@ async function uploadSCTXFileToStorage(file, projectId){
   const ext  = file.name.split('.').pop().toLowerCase();
   const ts   = Date.now();
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-  const storagePath = `${projectId}/${ts}_${safe}`;
   const bar  = document.getElementById('sctxUploadBar');
   const barW = document.getElementById('sctxUploadProgressBar');
   barW.style.display = 'block'; bar.style.width = '15%';
+  const mimeMapX = {'pdf':'application/pdf','docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document','xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','xls':'application/vnd.ms-excel','doc':'application/msword'};
+  const mimeType = mimeMapX[ext] || 'application/octet-stream';
+
+  // ── Nếu đã cấu hình WH_GDRIVE → upload qua N8N lên Google Drive (multipart) ──
+  if(WH_GDRIVE && !WH_GDRIVE.includes('your-n8n')){
+    bar.style.width = '20%';
+    const fd = new FormData();
+    fd.append('file',         file, `${ts}_${safe}`);
+    fd.append('project_id',   projectId);
+    fd.append('file_name',    `${ts}_${safe}`);
+    fd.append('file_ext',     ext);
+    fd.append('mime_type',    mimeType);
+    fd.append('file_size',    String(file.size));
+    fd.append('doc_desc',     document.getElementById('sctx_p1DocDesc')?.value?.trim() || '');
+    fd.append('nguoi_upload', document.getElementById('sctx_p1Nguoi')?.value?.trim() || currentUser?.email?.split('@')[0] || 'Người dùng');
+    bar.style.width = '40%';
+    const ctrl = new AbortController();
+    const tid  = setTimeout(()=>ctrl.abort(), 300000);
+    try{
+      const resp = await fetch(WH_GDRIVE, { method:'POST', body: fd, signal: ctrl.signal });
+      clearTimeout(tid);
+      bar.style.width = '90%';
+      if(!resp.ok){ const t=await resp.text(); throw new Error('GDrive upload lỗi '+resp.status+': '+t); }
+      let json;
+      try{ json = await resp.json(); } catch(e){ throw new Error('GDrive phản hồi không hợp lệ. Kiểm tra workflow N8N.'); }
+      if(!json.success) throw new Error(json.error || 'GDrive upload thất bại');
+      bar.style.width = '100%';
+      let realFileIdX = json.file_id;
+      if(!realFileIdX || realFileIdX === 'anyone' || realFileIdX.length < 10){
+        const mmx = (json.drive_url||'').match(/\/file\/d\/([^/?]+)/);
+        realFileIdX = mmx ? mmx[1] : null;
+      }
+      if(!realFileIdX || realFileIdX === 'anyone'){
+        throw new Error('N8N trả về file_id không hợp lệ ("'+json.file_id+'"). Hãy sửa Respond node trong N8N để dùng Upload node\'s file ID.');
+      }
+      const correctedUrlX = `https://drive.google.com/file/d/${realFileIdX}/view?usp=sharing`;
+      return { path: 'gdrive://'+realFileIdX, publicUrl: correctedUrlX, ext, via: 'gdrive',
+               fileName: `${ts}_${safe}` };
+    } catch(err){
+      clearTimeout(tid);
+      if(err.name==='AbortError') throw new Error('Upload timeout (>5 phút). File quá lớn hoặc mạng chậm.');
+      throw err;
+    }
+  }
+
+  // ── Fallback: Supabase Storage ──────────────────────────────────
+  const storagePath = `${projectId}/${ts}_${safe}`;
   const { data: sessionData } = await db.auth.getSession();
   const token = sessionData?.session?.access_token || SUPABASE_KEY;
-  const mimeType = ext==='pdf'?'application/pdf':ext==='docx'?'application/vnd.openxmlformats-officedocument.wordprocessingml.document':'application/msword';
   const uploadUrl = `${SUPABASE_URL}/storage/v1/object/document/${storagePath}`;
   bar.style.width = '30%';
   const uploadResp = await fetch(uploadUrl, {
-    method:'POST',
-    headers:{ 'Authorization':`Bearer ${token}`, 'apikey':SUPABASE_KEY, 'Content-Type':mimeType, 'x-upsert':'false', 'Cache-Control':'3600' },
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}`, 'apikey': SUPABASE_KEY, 'Content-Type': mimeType, 'x-upsert': 'false', 'Cache-Control': '3600' },
     body: file
   });
   bar.style.width = '80%';
   if(!uploadResp.ok){
-    let errMsg=`HTTP ${uploadResp.status}`;
-    try{ const j=await uploadResp.json(); errMsg=j.message||j.error||errMsg; }catch(e){}
+    let errMsg = `HTTP ${uploadResp.status}`;
+    try{ const j = await uploadResp.json(); errMsg = j.message||j.error||errMsg; }catch(e){}
     throw new Error('Upload Storage lỗi: '+errMsg);
   }
   const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/document/${storagePath}`;
@@ -4589,7 +4859,7 @@ async function loadSCTXProjDocs(id){
   const countEl = document.getElementById('sctxDtDocsCount');
   if(!listEl) return;
   listEl.innerHTML = '<div class="empty-state"><div class="sp"></div></div>';
-  const { data, error } = await db.from('document')
+  const { data, error } = await db.from('document_sctx')
     .select('*').eq('project_id', id)
     .order('ngay_upload', { ascending: false });
   if(error){ listEl.innerHTML='<div class="empty-state">Lỗi tải tài liệu</div>'; return; }
@@ -4597,7 +4867,8 @@ async function loadSCTXProjDocs(id){
   if(!data||!data.length){ listEl.innerHTML='<div class="empty-state" style="padding:32px">📭 Chưa có tài liệu nào được đính kèm</div>'; return; }
   listEl.innerHTML = data.map(doc => {
     const ext  = doc.loai_file||'pdf';
-    const icon = ext==='pdf'?'📕':'📘';
+    const iconM={'pdf':'📕','xlsx':'📊','xls':'📊'};
+    const icon = iconM[ext]||'📘';
     const date = doc.ngay_upload ? new Date(doc.ngay_upload).toLocaleString('vi-VN') : '–';
     const size = doc.kich_thuoc  ? formatBytes(doc.kich_thuoc) : '';
     return `<div class="doc-item">
@@ -4614,7 +4885,7 @@ async function loadSCTXProjDocs(id){
       </div>
       <div class="doc-item-actions">
         <button class="doc-btn" onclick="viewDoc('${doc.public_url}','${doc.ten_tai_lieu||doc.ten_file}','${doc.loai_file}')">👁 Xem</button>
-        <a class="doc-btn" href="${doc.public_url}" target="_blank" download="${doc.ten_file}">⬇ Tải</a>
+        <a class="doc-btn" href="${doc.public_url.includes('drive.google.com')?doc.public_url.replace('/view','/view?usp=sharing'):doc.public_url}" target="_blank">⬇ Tải</a>
         <button class="doc-btn del" onclick="deleteSCTXDoc('${doc.id}','${doc.storage_path}')">🗑</button>
       </div>
     </div>`;
@@ -4624,8 +4895,8 @@ async function loadSCTXProjDocs(id){
 async function deleteSCTXDoc(docId, storagePath){
   if(!confirm('Xác nhận xoá tài liệu này?')) return;
   try{
-    await db.storage.from('document').remove([storagePath]);
-    await db.from('document').delete().eq('id', docId);
+    if(!storagePath.startsWith('gdrive://')) await db.storage.from('document').remove([storagePath]);
+    await db.from('document_sctx').delete().eq('id', docId);
     toast('🗑 Đã xoá tài liệu','ok');
     if(curSCTXDetailId) await loadSCTXProjDocs(curSCTXDetailId);
   } catch(e){ toast('❌ Lỗi xoá: '+e.message,'err'); }
@@ -5326,16 +5597,16 @@ checkSession();
       <div class="chkr"><input type="checkbox" id="sctx_p1Cham"/><label for="sctx_p1Cham">🚨 Đánh dấu <strong>chậm tiến độ</strong></label></div>
       <div><label class="fl">Người cập nhật</label><input id="sctx_p1Nguoi" class="fc" placeholder="VD: Vũ Xuân Thi, Đinh Anh Dũng…"/></div>
       <div>
-        <label class="fl">📎 Tài liệu đính kèm (PDF hoặc Word, tối đa 20MB)</label>
+        <label class="fl" id="sctxUploadLabel">📎 Tài liệu đính kèm (PDF, Word hoặc Excel, tối đa 20MB)</label>
         <div class="upload-zone" id="sctxUploadZone" onclick="document.getElementById('sctxFileInput').click()"
           ondragover="event.preventDefault();this.classList.add('drag')"
           ondragleave="this.classList.remove('drag')"
           ondrop="event.preventDefault();this.classList.remove('drag');sctxHandleFileDrop(event)">
-          <input type="file" id="sctxFileInput" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          <input type="file" id="sctxFileInput" accept=".pdf,.doc,.docx,.xlsx,.xls,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
             onchange="sctxHandleFileSelect(event)"/>
           <div class="uz-icon">📄</div>
           <div class="uz-label">Kéo thả file vào đây hoặc <strong>nhấn để chọn</strong></div>
-          <div class="uz-hint">Hỗ trợ: PDF, DOC, DOCX · Tối đa 20MB</div>
+          <div class="uz-hint" id="sctxUploadHint">Hỗ trợ: PDF, DOC, DOCX, XLSX · Tối đa 20MB</div>
         </div>
         <div id="sctxFilePreview" style="display:none" class="file-preview">
           <span class="fp-icon" id="sctxFpIcon">📄</span>
