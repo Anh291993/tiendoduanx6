@@ -607,16 +607,16 @@ textarea.fc{resize:vertical;min-height:80px}
         <div class="kpi-card" style="--kc:#b08aff"><div class="kpi-icon">📋</div><div class="kpi-val" id="scl_k2">–</div><div class="kpi-lbl">Giao KHCP</div></div>
         <div class="kpi-card" style="--kc:#00e5b0"><div class="kpi-icon">✅</div><div class="kpi-val" id="scl_k3">–</div><div class="kpi-lbl">Thông qua</div></div>
         <div class="kpi-card" style="--kc:#ff8050"><div class="kpi-icon">📤</div><div class="kpi-val" id="scl_k4">–</div><div class="kpi-lbl">Trình danh mục</div></div>
-        <div class="kpi-card" style="--kc:var(--warn)"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="scl_k5">–</div><div class="kpi-lbl">Có vướng mắc</div></div>
-        <div class="kpi-card" style="--kc:var(--danger)"><div class="kpi-icon">🚨</div><div class="kpi-val" id="scl_k6">–</div><div class="kpi-lbl">Chậm tiến độ</div></div>
+        <div class="kpi-card clickable" style="--kc:var(--warn)" onclick="openSCLSCTXKpiPopup('SCL','vuong_mac')"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="scl_k5">–</div><div class="kpi-lbl">Có vướng mắc</div></div>
+        <div class="kpi-card clickable" style="--kc:var(--danger)" onclick="openSCLSCTXKpiPopup('SCL','cham')"><div class="kpi-icon">🚨</div><div class="kpi-val" id="scl_k6">–</div><div class="kpi-lbl">Chậm tiến độ</div></div>
       </div>
 
       <div class="sec-h">🛠 Tổng quan dự án SCTX</div>
       <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
         <div class="kpi-card" style="--kc:#f59e0b"><div class="kpi-icon">📋</div><div class="kpi-val" id="sctx_k1">–</div><div class="kpi-lbl">P04 – Triển khai</div></div>
         <div class="kpi-card" style="--kc:#60a5fa"><div class="kpi-icon">🔧</div><div class="kpi-val" id="sctx_k2">–</div><div class="kpi-lbl">P02/P08 – Triển khai</div></div>
-        <div class="kpi-card" style="--kc:var(--warn)"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="sctx_k3">–</div><div class="kpi-lbl">Có vướng mắc</div></div>
-        <div class="kpi-card" style="--kc:var(--danger)"><div class="kpi-icon">🚨</div><div class="kpi-val" id="sctx_k4">–</div><div class="kpi-lbl">Chậm tiến độ</div></div>
+        <div class="kpi-card clickable" style="--kc:var(--warn)" onclick="openSCLSCTXKpiPopup('SCTX','vuong_mac')"><div class="kpi-icon">⚠️</div><div class="kpi-val" id="sctx_k3">–</div><div class="kpi-lbl">Có vướng mắc</div></div>
+        <div class="kpi-card clickable" style="--kc:var(--danger)" onclick="openSCLSCTXKpiPopup('SCTX','cham')"><div class="kpi-icon">🚨</div><div class="kpi-val" id="sctx_k4">–</div><div class="kpi-lbl">Chậm tiến độ</div></div>
       </div>
 
       <div class="charts-row" style="grid-template-columns:1fr 1fr">
@@ -3791,6 +3791,65 @@ async function sendChat(){
 function closeKpiPopup(){
   document.getElementById('kpiPopup').classList.remove('open');
   document.body.style.overflow='';
+}
+
+// ─── SCL / SCTX KPI POPUP ─────────────────────────────────────────
+function openSCLSCTXKpiPopup(source, type){
+  const data = source === 'SCL' ? allSCL : allSCTX;
+  const isVuongMac = type === 'vuong_mac';
+  const filtered = isVuongMac
+    ? data.filter(p => p.vuong_mac && p.vuong_mac.trim())
+    : data.filter(p => p.is_cham_tien_do);
+
+  const icon    = isVuongMac ? '⚠️' : '🚨';
+  const title   = isVuongMac ? `Có vướng mắc – ${source}` : `Chậm tiến độ – ${source}`;
+  const color   = isVuongMac ? 'var(--warn)' : 'var(--danger)';
+  const bg      = isVuongMac ? 'rgba(255,179,71,.15)' : 'rgba(255,79,79,.15)';
+
+  document.getElementById('kpopIcon').textContent = icon;
+  document.getElementById('kpopTitle').textContent = title;
+  const badge = document.getElementById('kpopBadge');
+  badge.textContent = filtered.length + ' dự án';
+  badge.style.cssText = 'background:'+bg+';color:'+color+';border:1px solid '+color+'40;';
+  document.getElementById('kpopCount').textContent =
+    'Hiển thị ' + filtered.length + ' dự án · Nhấn vào dòng để xem chi tiết';
+
+  let headHTML, bodyHTML;
+
+  if(isVuongMac){
+    headHTML = '<tr><th style="width:32px">#</th><th>Tên công trình</th><th>Vướng mắc</th></tr>';
+    bodyHTML = !filtered.length
+      ? '<tr><td colspan="3" class="kpop-empty">Không có dự án nào có vướng mắc ✅</td></tr>'
+      : filtered.map((p,i) => {
+          const openFn = source==='SCL'
+            ? `closeKpiPopup();openSCLDetail('${p.id}')`
+            : `closeKpiPopup();openSCTXDetail('${p.id}')`;
+          return `<tr style="cursor:pointer" onclick="${openFn}">
+            <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
+            <td class="kpop-name">${p.ten_cong_trinh}</td>
+            <td style="color:var(--warn);max-width:420px">${p.vuong_mac}</td>
+          </tr>`;
+        }).join('');
+  } else {
+    headHTML = '<tr><th style="width:32px">#</th><th>Tên công trình</th><th>Tiến độ hiện tại</th></tr>';
+    bodyHTML = !filtered.length
+      ? '<tr><td colspan="3" class="kpop-empty">Không có dự án nào chậm tiến độ ✅</td></tr>'
+      : filtered.map((p,i) => {
+          const openFn = source==='SCL'
+            ? `closeKpiPopup();openSCLDetail('${p.id}')`
+            : `closeKpiPopup();openSCTXDetail('${p.id}')`;
+          return `<tr style="cursor:pointer" onclick="${openFn}">
+            <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
+            <td class="kpop-name">${p.ten_cong_trinh}</td>
+            <td style="color:var(--danger);max-width:420px">${p.tien_do||'<span style="color:rgba(255,255,255,.25)">–</span>'}</td>
+          </tr>`;
+        }).join('');
+  }
+
+  document.getElementById('kpopHead').innerHTML = headHTML;
+  document.getElementById('kpopBody').innerHTML = bodyHTML;
+  document.getElementById('kpiPopup').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 // Navigate to Gantt tab, open project detail filtered to a specific overdue phase
