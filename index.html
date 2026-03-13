@@ -978,7 +978,7 @@ textarea.fc{resize:vertical;min-height:80px}
       <div><label class="fl">Vướng mắc (để trống nếu không có)</label>
         <textarea id="p1VM" class="fc" style="min-height:60px" placeholder="Mô tả khó khăn, vướng mắc…"></textarea></div>
       <div class="chkr"><input type="checkbox" id="p1Cham"/><label for="p1Cham">🚨 Đánh dấu <strong>chậm tiến độ</strong></label></div>
-      <div><label class="fl">Người cập nhật</label><input id="p1Nguoi" class="fc" placeholder="Họ và tên…"/></div>
+      <div><label class="fl">Người cập nhật <span style="color:var(--danger)">*</span></label><input id="p1Nguoi" class="fc" placeholder="VD: Đinh Anh Dũng, Vũ Xuân Thi…"/></div>
       <div>
         <label class="fl">📎 Tài liệu đính kèm (PDF hoặc Word, tối đa 20MB)</label>
         <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()"
@@ -1286,7 +1286,7 @@ textarea.fc{resize:vertical;min-height:80px}
       <div><label class="fl">Vướng mắc (để trống nếu không có)</label>
         <textarea id="scl_p1VM" class="fc" style="min-height:60px" placeholder="Mô tả khó khăn, vướng mắc…"></textarea></div>
       <div class="chkr"><input type="checkbox" id="scl_p1Cham"/><label for="scl_p1Cham">🚨 Đánh dấu <strong>chậm tiến độ</strong></label></div>
-      <div><label class="fl">Người cập nhật</label><input id="scl_p1Nguoi" class="fc" placeholder="VD: Vũ Xuân Thi, Đinh Anh Dũng…"/></div>
+      <div><label class="fl">Người cập nhật <span style="color:var(--danger)">*</span></label><input id="scl_p1Nguoi" class="fc" placeholder="VD: Đinh Anh Dũng, Vũ Xuân Thi…"/></div>
       <div>
         <label class="fl" id="sclUploadLabel">📎 Tài liệu đính kèm (PDF, Word hoặc Excel, tối đa 20MB)</label>
         <div class="upload-zone" id="sclUploadZone" onclick="document.getElementById('sclFileInput').click()"
@@ -3054,6 +3054,7 @@ async function submitProg(){
   const nguoi=document.getElementById('p1Nguoi').value.trim()||currentUser?.email?.split('@')[0]||'Người dùng';
   if(!id){ toast('Vui lòng chọn dự án','warn'); return; }
   if(!td){ toast('Nội dung tiến độ không được rỗng','warn'); return; }
+  if(!nguoi){ toast('Vui lòng nhập tên Người cập nhật','warn'); document.getElementById('p1Nguoi').focus(); return; }
   const payload={project_id:id,noi_dung_tien_do:td,vuong_mac:vm||null,is_cham_tien_do:cham,nguoi_cap_nhat:nguoi};
   try{
     if(WH1&&!WH1.includes('your-n8n')){
@@ -4097,7 +4098,8 @@ async function submitSCLProg(){
   const cham = document.getElementById('scl_p1Cham').checked;
   if(!id){ toast('Vui lòng chọn công trình','warn'); return; }
   if(!td){ toast('Vui lòng nhập nội dung tiến độ','warn'); return; }
-  const nguoiCapNhat = document.getElementById('scl_p1Nguoi').value.trim() || currentUser?.email?.split('@')[0] || 'Người dùng';
+  const nguoiCapNhat = document.getElementById('scl_p1Nguoi').value.trim();
+  if(!nguoiCapNhat){ toast('Vui lòng nhập tên Người cập nhật','warn'); document.getElementById('scl_p1Nguoi').focus(); return; }
   try{
     const updates = { tien_do: td, vuong_mac: vm||null, is_cham_tien_do: cham, updated_at: new Date().toISOString() };
     const { error } = await db.from('scl_projects').update(updates).eq('id', id);
@@ -4696,7 +4698,8 @@ async function submitSCTXProg(){
   const cham = document.getElementById('sctx_p1Cham').checked;
   if(!id){ toast('Vui lòng chọn công trình','warn'); return; }
   if(!td){ toast('Vui lòng nhập nội dung tiến độ','warn'); return; }
-  const nguoiCapNhat = document.getElementById('sctx_p1Nguoi').value.trim() || currentUser?.email?.split('@')[0] || 'Người dùng';
+  const nguoiCapNhat = document.getElementById('sctx_p1Nguoi').value.trim();
+  if(!nguoiCapNhat){ toast('Vui lòng nhập tên Người cập nhật','warn'); document.getElementById('sctx_p1Nguoi').focus(); return; }
   try{
     const updates = { tien_do: td, vuong_mac: vm||null, is_cham_tien_do: cham, updated_at: new Date().toISOString() };
     const { error } = await db.from('sctx_projects').update(updates).eq('id', id);
@@ -5654,7 +5657,7 @@ checkSession();
       <div><label class="fl">Vướng mắc (để trống nếu không có)</label>
         <textarea id="sctx_p1VM" class="fc" style="min-height:60px" placeholder="Mô tả khó khăn, vướng mắc…"></textarea></div>
       <div class="chkr"><input type="checkbox" id="sctx_p1Cham"/><label for="sctx_p1Cham">🚨 Đánh dấu <strong>chậm tiến độ</strong></label></div>
-      <div><label class="fl">Người cập nhật</label><input id="sctx_p1Nguoi" class="fc" placeholder="VD: Vũ Xuân Thi, Đinh Anh Dũng…"/></div>
+      <div><label class="fl">Người cập nhật <span style="color:var(--danger)">*</span></label><input id="sctx_p1Nguoi" class="fc" placeholder="VD: Đinh Anh Dũng, Vũ Xuân Thi…"/></div>
       <div>
         <label class="fl" id="sctxUploadLabel">📎 Tài liệu đính kèm (PDF, Word hoặc Excel, tối đa 20MB)</label>
         <div class="upload-zone" id="sctxUploadZone" onclick="document.getElementById('sctxFileInput').click()"
