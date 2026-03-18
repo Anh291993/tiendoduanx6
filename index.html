@@ -1505,7 +1505,7 @@ function showApp(){
   initUploadLabels();
   loadAll();
   setInterval(()=>{ document.getElementById('hTime').textContent=new Date().toLocaleTimeString('vi-VN'); },1000);
-  setInterval(loadAll,60000);
+  setInterval(backgroundRefresh,60000);
   // Pre-load SCL + SCTX for dashboard KPI cards
   setTimeout(()=>{ loadSCL(); loadSCTX(); }, 1000);
 }
@@ -1520,6 +1520,72 @@ async function loadAll(){
   // Load SCL & SCTX for dashboard KPI + charts (non-blocking)
   loadSCL();
   loadSCTX();
+}
+
+// ─── BACKGROUND REFRESH (cập nhật nền, giữ nguyên trạng thái lọc) ─
+async function backgroundRefresh(){
+  // ── ĐTXD ──────────────────────────────────────────────────────────
+  try{
+    const {data: projects, error} = await db.from('projects').select('*').order('trang_thai').order('stt');
+    if(!error && projects){
+      const {data: logs} = await db.from('progress_logs')
+        .select('project_id, noi_dung_tien_do, nguoi_cap_nhat, ngay_cap_nhat')
+        .order('ngay_cap_nhat', {ascending: false});
+      let merged = projects;
+      if(logs && logs.length){
+        const latestLog = {};
+        logs.forEach(l => { if(!latestLog[l.project_id]) latestLog[l.project_id] = l; });
+        merged = projects.map(p => ({
+          ...p,
+          tien_do: p.tien_do || latestLog[p.id]?.noi_dung_tien_do || null,
+          _latestLog: latestLog[p.id] || null
+        }));
+      }
+      allProjects = merged;
+      renderKPI(computeKPI(allProjects));
+      // Cập nhật dropdown CV nhưng giữ lại giá trị đang chọn
+      const fCVel = document.getElementById('fCV');
+      const fCVcur = fCVel ? fCVel.value : '';
+      populateCVFilter(allProjects);
+      if(fCVel && fCVcur) fCVel.value = fCVcur;
+      applyFilter(); // re-render bảng với bộ lọc hiện tại
+    }
+  } catch(e){ console.warn('[BG-REFRESH] ĐTXD:', e.message); }
+
+  // ── SCL ───────────────────────────────────────────────────────────
+  try{
+    const {data: sclData, error: sclErr} = await db.from('scl_projects').select('*').order('trang_thai').order('stt');
+    if(!sclErr && sclData){
+      allSCL = sclData;
+      renderSCLKPI(allSCL);
+      if(typeof renderSCLChart === 'function') renderSCLChart(allSCL);
+      // Giữ giá trị CV đang chọn
+      const sclCVel = document.getElementById('sclCV');
+      const sclCVcur = sclCVel ? sclCVel.value : '';
+      populateSCLCVFilter(allSCL);
+      if(sclCVel && sclCVcur) sclCVel.value = sclCVcur;
+      applySCLFilter(); // re-render với bộ lọc hiện tại
+    }
+  } catch(e){ console.warn('[BG-REFRESH] SCL:', e.message); }
+
+  // ── SCTX ──────────────────────────────────────────────────────────
+  try{
+    const {data: sctxData, error: sctxErr} = await db.from('sctx_projects').select('*').order('stt');
+    if(!sctxErr && sctxData){
+      allSCTX = sctxData;
+      renderSCTXKPI(allSCTX);
+      if(typeof renderSCTXChart === 'function') renderSCTXChart(allSCTX);
+      // Giữ giá trị CV đang chọn
+      const sctxCVel = document.getElementById('sctxCV');
+      const sctxCVcur = sctxCVel ? sctxCVel.value : '';
+      populateSCTXCVFilter(allSCTX);
+      if(sctxCVel && sctxCVcur) sctxCVel.value = sctxCVcur;
+      applySCTXFilter(); // re-render với bộ lọc hiện tại
+    }
+  } catch(e){ console.warn('[BG-REFRESH] SCTX:', e.message); }
+
+  // ── Nhật ký hoạt động ─────────────────────────────────────────────
+  try{ await loadLog(); } catch(e){ console.warn('[BG-REFRESH] log:', e.message); }
 }
 
 async function loadData(){
