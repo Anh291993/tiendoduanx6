@@ -284,6 +284,11 @@ tbody td{padding:11px 14px;vertical-align:middle}
 .log-feed{background:var(--faint);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .log-feed-hdr{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .log-feed-hdr h2{font-size:13px;font-weight:700}
+.log-src-btn{font-family:var(--font);font-size:11px;font-weight:700;padding:4px 11px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:var(--muted);
+  cursor:pointer;transition:all .15s;white-space:nowrap;}
+.log-src-btn:hover{border-color:var(--sc,var(--accent));color:var(--sc,var(--accent));background:rgba(255,255,255,.08)}
+.log-src-btn.active{border-color:var(--sc,var(--accent));color:var(--sc,var(--accent));background:rgba(255,255,255,.08);font-weight:800}
 .log-list{max-height:620px;overflow-y:auto;padding:4px 0}
 .log-list::-webkit-scrollbar{width:4px}.log-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .log-item{padding:13px 20px;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s}
@@ -879,9 +884,18 @@ textarea.fc{resize:vertical;min-height:80px}
       <div class="sec-h">📜 Nhật ký hoạt động hệ thống</div>
       <div class="log-layout">
         <div class="log-feed">
-          <div class="log-feed-hdr">
-            <h2>Tất cả cập nhật</h2>
-            <button class="btn bg" style="padding:5px 12px;font-size:11px" onclick="loadLog()">↺ Làm mới</button>
+          <div class="log-feed-hdr" style="flex-wrap:wrap;gap:10px">
+            <h2 id="logFeedTitle">Tất cả cập nhật</h2>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-left:auto">
+              <div style="display:flex;gap:4px">
+                <button class="log-src-btn active" data-src="ALL"  onclick="filterSysLog('ALL')"  style="--sc:#00c2ff">Tất cả</button>
+                <button class="log-src-btn" data-src="ĐTXD"  onclick="filterSysLog('ĐTXD')" style="--sc:#00c2ff">📐 ĐTXD</button>
+                <button class="log-src-btn" data-src="ĐTMS"  onclick="filterSysLog('ĐTMS')" style="--sc:#a78bfa">🔌 ĐTMS</button>
+                <button class="log-src-btn" data-src="SCL"   onclick="filterSysLog('SCL')"  style="--sc:#64b4ff">🔧 SCL</button>
+                <button class="log-src-btn" data-src="SCTX"  onclick="filterSysLog('SCTX')" style="--sc:#f59e0b">🛠 SCTX</button>
+              </div>
+              <button class="btn bg" style="padding:5px 12px;font-size:11px" onclick="loadLog()">↺ Làm mới</button>
+            </div>
           </div>
           <div class="log-list" id="sysLog"><div class="empty-state"><div class="sp"></div></div></div>
         </div>
@@ -2938,9 +2952,36 @@ function logItem(l){
 }
 
 function renderSysLog(logs){
+  window._allSysLogs = logs || [];  // cache để filter không cần fetch lại
   const el=document.getElementById('sysLog');
   if(!logs||!logs.length){ el.innerHTML='<div class="empty-state">Chưa có nhật ký nào</div>'; return; }
   el.innerHTML=logs.map(l=>logItem(l)).join('');
+  // reset filter về "Tất cả" khi load mới
+  document.querySelectorAll('.log-src-btn').forEach(b=>b.classList.remove('active'));
+  const allBtn=document.querySelector('.log-src-btn[data-src="ALL"]');
+  if(allBtn) allBtn.classList.add('active');
+  const titleEl=document.getElementById('logFeedTitle');
+  if(titleEl) titleEl.textContent='Tất cả cập nhật ('+logs.length+')';
+}
+function filterSysLog(src){
+  // cập nhật active button
+  document.querySelectorAll('.log-src-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.querySelector(`.log-src-btn[data-src="${src}"]`);
+  if(btn) btn.classList.add('active');
+
+  const logs = window._allSysLogs || [];
+  const filtered = src==='ALL' ? logs : logs.filter(l=>l._src===src);
+
+  const titleEl=document.getElementById('logFeedTitle');
+  const labelMap={'ALL':'Tất cả cập nhật','ĐTXD':'Dự án ĐTXD','ĐTMS':'Dự án ĐTMS','SCL':'Dự án SCL','SCTX':'Dự án SCTX'};
+  if(titleEl) titleEl.textContent=(labelMap[src]||src)+' ('+filtered.length+')';
+
+  const el=document.getElementById('sysLog');
+  if(!filtered.length){
+    el.innerHTML='<div class="empty-state" style="padding:48px;text-align:center;color:var(--muted)">Không có nhật ký nào cho loại dự án này</div>';
+    return;
+  }
+  el.innerHTML=filtered.map(l=>logItem(l)).join('');
 }
 function renderDashLog(logs){
   const el=document.getElementById('dashLog'); if(!el) return;
